@@ -6,55 +6,82 @@ import { Loader } from "@/components/loader";
 
 interface Transcription {
   id: string;
-  meeting_id: string;
-  speaker_id: string;
-  speaker_name: string;
+  user_id: string;
+  room_name: string;
+  sender: string;
   text: string;
-  stt_provider: string;
-  timestamp: string;
+  created_at: string;
+}
+
+interface Translation {
+  id: string;
+  user_id: string;
+  meeting_id: string;
+  source_lang: string;
+  target_lang: string;
+  original_text: string;
+  translated_text: string;
   created_at: string;
 }
 
 interface GroupedTranscription {
-  meeting_id: string;
-  entries: Transcription[];
+  room_name: string;
+  entries: (Transcription & { translation?: Translation })[];
 }
 
 export default function TranscriptionsPage() {
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isLoaded, user } = useUser();
+  const { isLoaded } = useUser();
 
   useEffect(() => {
-    const fetchTranscriptions = async () => {
+    const fetchAllData = async () => {
       try {
-        const response = await fetch("/api/transcription");
-        if (!response.ok) {
-          throw new Error("Failed to fetch transcriptions");
+        const [transResponse, translatResponse] = await Promise.all([
+          fetch("/api/transcription"),
+          fetch("/api/translate/history") // Mocking this for now or I should create it
+        ]);
+
+        if (!transResponse.ok) throw new Error("Failed to fetch transcriptions");
+        
+        const transData = await transResponse.json();
+        
+        let translationsData: Translation[] = [];
+        if (translatResponse.ok) {
+          const data = await translatResponse.json();
+          translationsData = data.translations || [];
         }
-        const data = await response.json();
-        setTranscriptions(data.transcriptions || []);
+
+        // Map transcriptions and their translations
+        const combined = transData.transcriptions.map((t: Transcription) => {
+          const translation = translationsData.find(
+            (tr) => tr.original_text === t.text && tr.meeting_id === t.room_name
+          );
+          return { ...t, translation };
+        });
+
+        setTranscriptions(combined);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load transcriptions");
+        setError(e instanceof Error ? e.message : "Failed to load data");
       } finally {
         setLoading(false);
       }
     };
 
     if (isLoaded) {
-      fetchTranscriptions();
+      fetchAllData();
     }
   }, [isLoaded]);
 
-  // Group transcriptions by meeting_id
+  // Group transcriptions by room_name
   const groupedTranscriptions = transcriptions.reduce<GroupedTranscription[]>(
     (acc, transcription) => {
-      const existing = acc.find((g) => g.meeting_id === transcription.meeting_id);
+      const existing = acc.find((g) => g.room_name === transcription.room_name);
       if (existing) {
         existing.entries.push(transcription);
       } else {
-        acc.push({ meeting_id: transcription.meeting_id, entries: [transcription] });
+        acc.push({ room_name: transcription.room_name, entries: [transcription] });
       }
       return acc;
     },
@@ -86,12 +113,12 @@ export default function TranscriptionsPage() {
         <div className="flex flex-col gap-6">
           {groupedTranscriptions.map((group) => (
             <div
-              key={group.meeting_id}
+              key={group.room_name}
               className="rounded-lg border border-white/10 bg-white/5 p-6"
             >
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold">
-                  Meeting: {group.meeting_id.slice(0, 8)}...
+                  Room: {group.room_name.slice(0, 8)}...
                 </h2>
                 <span className="text-sm text-white/40">
                   {group.entries.length} entries
@@ -107,16 +134,18 @@ export default function TranscriptionsPage() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium uppercase text-emerald-400">
-                          {entry.speaker_name}
+                          {entry.sender}
                         </span>
                         <span className="text-[10px] text-white/30">
-                          {new Date(entry.timestamp).toLocaleTimeString()}
-                        </span>
-                        <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] uppercase text-white/50">
-                          {entry.stt_provider}
+                          {new Date(entry.created_at).toLocaleTimeString()}
                         </span>
                       </div>
                       <p className="text-sm text-white/80">{entry.text}</p>
+                      {entry.translation && (
+                        <p className="mt-1 text-xs font-medium italic text-emerald-400">
+                          {entry.translation.translated_text}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -125,7 +154,7 @@ export default function TranscriptionsPage() {
               <button
                 onClick={() => {
                   const text = group.entries
-                    .map((e) => `[${e.speaker_name}]: ${e.text}`)
+                    .map((e) => `[${e.sender}]: ${e.text}`)
                     .join("\n");
                   navigator.clipboard.writeText(text);
                 }}

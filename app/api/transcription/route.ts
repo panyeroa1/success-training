@@ -4,14 +4,25 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = 
   process.env.SUPABASE_SERVICE_KEY || 
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function getSupabaseClient(): SupabaseClient | null {
   if (supabaseUrl && supabaseKey) {
     return createClient(supabaseUrl, supabaseKey);
   }
   return null;
+}
+
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
+
+function ensureUUID(id: string | null | undefined): string {
+  if (!id) return NIL_UUID;
+  
+  // Basic UUID format check
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) return id;
+  
+  return NIL_UUID;
 }
 
 /**
@@ -38,7 +49,12 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from("transcriptions")
-      .insert([{ user_id, room_name, sender: sender || "Speaker", text }])
+      .insert([{ 
+        user_id: ensureUUID(user_id), 
+        room_name, 
+        sender: sender || "Speaker", 
+        text 
+      }])
       .select();
 
     if (error) {

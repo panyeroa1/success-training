@@ -3,14 +3,17 @@
 import { useCallStateHooks, useCall } from "@stream-io/video-react-sdk";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { saveTranscription } from "@/lib/transcription-service";
+import { getTranslation, saveTranslation } from "@/lib/translate-service";
+
+import { signInAnonymously } from "@/lib/supabase";
 
 interface CaptionLine {
   id: string;
   speaker: string;
   speakerId: string;
   text: string;
+  translatedText?: string;
   timestamp: number;
-  saved: boolean;
 }
 
 interface CustomTranscript {
@@ -23,6 +26,7 @@ interface TranscriptionOverlayProps {
   sttProvider: "stream" | "webspeech" | "deepgram";
   customTranscript: CustomTranscript | null;
   userId?: string;
+  targetLanguage?: string;
 }
 
 const CAPTION_DISPLAY_DURATION = 5000;
@@ -32,6 +36,7 @@ export const TranscriptionOverlay = ({
   sttProvider,
   customTranscript,
   userId,
+  targetLanguage = "off",
 }: TranscriptionOverlayProps) => {
   const { useCallClosedCaptions } = useCallStateHooks();
   const call = useCall();
@@ -40,63 +45,106 @@ export const TranscriptionOverlay = ({
   const lastCaptionRef = useRef<string>("");
   const savedIdsRef = useRef<Set<string>>(new Set());
 
+  const roomName = call?.id || "unknown";
   const meetingId = call?.id || "unknown";
 
-  // Save transcription to Supabase
+  // Initialize anonymous auth on mount
+  useEffect(() => {
+    signInAnonymously().then(({ success, user }) => {
+      if (success) {
+        console.log("Authenticated anonymously to Supabase:", user?.id);
+      }
+    });
+  }, []);
+
+  // Handle translation and saving (Strict: Fetch -> Translate -> Save)
+  const processTranscriptionFlow = useCallback(
+    async (line: CaptionLine) => {
+      const originalText = line.text;
+      let translatedText: string | null = null;
+
+      // 1. Handle Translation if needed
+      if (targetLanguage !== "off") {
+        translatedText = await getTranslation(originalText, targetLanguage);
+        
+        if (translatedText) {
+          // Update UI with translation
+          setLines((prev) =>
+            prev.map((l) => (l.id === line.id ? { ...l, translatedText: translatedText! } : l))
+          );
+
+          // 2. Save both original and translated text to translations table
+          await saveTranslation({
+            user_id: userId || line.speakerId || "anonymous",
+            meeting_id: meetingId,
+            source_lang: "auto",
+            target_lang: targetLanguage,
+            original_text: originalText,
+            translated_text: translatedText,
+          });
+          
+          return; // Flow complete for translated case
+        }
+      }
+
+      // 3. Fallback: Save as regular transcription if translation is off or failed
+      await saveTranscription({
+        user_id: userId || line.speakerId || "anonymous",
+        room_name: roomName,
+        sender: line.speaker,
+        text: originalText,
+      });
+    },
+    [roomName, meetingId, userId, targetLanguage]
+  );
+
+  // Trigger flow
   const saveToSupabase = useCallback(
     async (line: CaptionLine) => {
       if (savedIdsRef.current.has(line.id)) return;
-
       savedIdsRef.current.add(line.id);
 
-      await saveTranscription({
-        meeting_id: meetingId,
-        speaker_id: line.speakerId,
-        speaker_name: line.speaker,
-        text: line.text,
-        stt_provider: sttProvider,
-        timestamp: new Date(line.timestamp).toISOString(),
-      });
+      processTranscriptionFlow(line);
     },
-    [meetingId, sttProvider]
+    [processTranscriptionFlow]
   );
 
   // Handle Stream captions
   useEffect(() => {
     if (sttProvider !== "stream" || streamCaptions.length === 0) return;
 
-    const latestCaption = streamCaptions[streamCaptions.length - 1];
-    const captionKey = `${latestCaption.user?.id}-${latestCaption.start_time}`;
+    // Process all captions that haven't been saved yet
+    streamCaptions.forEach((caption) => {
+      const captionKey = `${caption.user?.id}-${caption.start_time}`;
+      
+      // If we haven't seen this specific caption start before, or if it has updated significantly
+      if (!savedIdsRef.current.has(captionKey)) {
+        const newLine: CaptionLine = {
+          id: captionKey,
+          speaker: caption.user?.name || caption.user?.id || "Speaker",
+          speakerId: caption.user?.id || "unknown",
+          text: caption.text,
+          timestamp: Date.now(),
+        };
 
-    if (captionKey === lastCaptionRef.current) return;
-    lastCaptionRef.current = captionKey;
+        saveToSupabase(newLine);
 
-    const newLine: CaptionLine = {
-      id: captionKey,
-      speaker: latestCaption.user?.name || latestCaption.user?.id || "Speaker",
-      speakerId: latestCaption.user?.id || "unknown",
-      text: latestCaption.text,
-      timestamp: Date.now(),
-      saved: false,
-    };
+        setLines((prev) => {
+          const existingIndex = prev.findIndex(
+            (line) =>
+              line.speaker === newLine.speaker &&
+              Date.now() - line.timestamp < 2000
+          );
 
-    // Save to Supabase
-    saveToSupabase(newLine);
+          if (existingIndex !== -1) {
+            const updated = [...prev];
+            updated[existingIndex] = { ...newLine, timestamp: Date.now() };
+            return updated.slice(-MAX_VISIBLE_LINES);
+          }
 
-    setLines((prev) => {
-      const existingIndex = prev.findIndex(
-        (line) =>
-          line.speaker === newLine.speaker &&
-          Date.now() - line.timestamp < 2000
-      );
-
-      if (existingIndex !== -1) {
-        const updated = [...prev];
-        updated[existingIndex] = { ...newLine, timestamp: Date.now() };
-        return updated.slice(-MAX_VISIBLE_LINES);
+          return [...prev, newLine].slice(-MAX_VISIBLE_LINES);
+        });
       }
-
-      return [...prev, newLine].slice(-MAX_VISIBLE_LINES);
     });
   }, [streamCaptions, sttProvider, saveToSupabase]);
 
@@ -110,10 +158,8 @@ export const TranscriptionOverlay = ({
       speakerId: userId || "local",
       text: customTranscript.text,
       timestamp: Date.now(),
-      saved: false,
     };
 
-    // Save to Supabase
     saveToSupabase(newLine);
 
     setLines((prev) => {
@@ -159,15 +205,22 @@ export const TranscriptionOverlay = ({
         return (
           <div
             key={line.id}
-            className="caption-line w-full max-w-4xl overflow-hidden"
-            data-opacity={opacity}
+            className="caption-line flex w-full max-w-4xl flex-col items-start overflow-hidden transition-opacity duration-300"
+            data-opacity={Math.round(opacity * 10) / 10}
           >
-            <p className="text-left text-sm font-light tracking-wide text-white [text-shadow:_1px_1px_3px_rgba(0,0,0,1),_0_0_2px_rgba(0,0,0,1)] md:text-base">
-              <span className="mr-2 text-[10px] font-normal uppercase tracking-wider text-white/50 md:text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-normal uppercase tracking-wider text-white/50 md:text-xs">
                 {line.speaker}
               </span>
-              <span className="animate-typewriter">{line.text}</span>
-            </p>
+              <p className="text-left text-sm font-light tracking-wide text-white [text-shadow:_1px_1px_3px_rgba(0,0,0,1),_0_0_2px_rgba(0,0,0,1)] md:text-base">
+                <span className="animate-typewriter">{line.text}</span>
+              </p>
+            </div>
+            {line.translatedText && (
+              <p className="ml-10 text-left text-xs font-medium italic tracking-wide text-emerald-400 [text-shadow:_1px_1px_2px_rgba(0,0,0,0.8)] md:text-sm">
+                {line.translatedText}
+              </p>
+            )}
           </div>
         );
       })}

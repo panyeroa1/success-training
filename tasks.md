@@ -90,3 +90,47 @@ Test result:
 
 Known limitations or follow-up tasks:
 - None
+
+------------------------------------------------------------
+
+Task ID: T-0014
+Title: Real-time Translation with Gemini
+Status: TODO
+Owner: Miles
+Related repo or service: Orbit
+Branch: main
+Created: 2026-01-01 07:55
+Last updated: 2026-01-01 07:55
+
+START LOG (fill this before you start coding)
+
+Timestamp: 2026-01-01 07:55
+Current behavior or state:
+- Transcriptions are saved in Supabase, but no automatic translation is performed.
+
+Plan and scope for this task:
+- Create a translation API using Gemini (models/gemini-flash-lite-latest).
+- Implement saving translated text to the Supabase translations table.
+- Add a language selector to the MeetingRoom UI.
+- Trigger translation automatically when new transcription segments are finalized.
+- Display translated captions in the TranscriptionOverlay.
+
+Files or modules expected to change:
+- app/api/translate/route.ts
+- lib/translate-service.ts
+- components/meeting-room.tsx
+- components/transcription-overlay.tsx
+
+Risks or things to watch out for:
+- API latency during real-time meetings.
+- Gemini API quota/limits.
+
+WORK CHECKLIST
+
+- [ ] Implement Gemini translation API
+- [ ] Create Supabase translation storage service
+- [ ] Add language selector to Meeting Room UI
+- [ ] Integrate translation trigger in Overlay
+- [ ] Verify build and functionality
+
+END LOG (fill this after you finish coding and testing)

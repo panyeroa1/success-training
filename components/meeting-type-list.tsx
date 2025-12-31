@@ -126,6 +126,14 @@ export const MeetingTypeList = () => {
         className="border border-white/10 bg-gradient-to-br from-[#0B0D10] via-[#151A22] to-[#0B0D10] hover:border-white/20"
       />
 
+      <HomeCard
+        img="/icons/video.svg"
+        title="Transcriptions"
+        description="View past meeting transcripts"
+        handleClick={() => router.push("/transcriptions")}
+        className="border border-white/10 bg-gradient-to-br from-[#0B0D10] via-[#12161B] to-[#0B0D10] hover:border-white/20"
+      />
+
       {!callDetails ? (
         <MeetingModal
           isOpen={meetingState === "isScheduleMeeting"}

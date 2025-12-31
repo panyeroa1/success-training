@@ -48,6 +48,7 @@ export const MeetingRoom = () => {
   const [showParticipants, setShowParticipants] = useState(false);
   const [layout, setLayout] = useState<CallLayoutType>("speaker-left");
   const [sttProvider, setSTTProvider] = useState<STTProvider>("stream");
+  const [translationLanguage, setTranslationLanguage] = useState<string>("off");
   const [customTranscript, setCustomTranscript] = useState<{
     text: string;
     speaker: string;
@@ -188,6 +189,7 @@ export const MeetingRoom = () => {
         sttProvider={sttProvider}
         customTranscript={customTranscript}
         userId={user?.id}
+        targetLanguage={translationLanguage}
       />
 
       <div className="fixed bottom-0 left-0 right-0 z-50 flex w-full flex-wrap items-center justify-center gap-2 border-t border-white/10 bg-black/80 px-3 py-3 backdrop-blur-md">
