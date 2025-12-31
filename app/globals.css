@@ -194,3 +194,20 @@ body::before {
     width: 100%;
   }
 }
+
+/* Typewriter caption animation */
+@keyframes typewriter {
+  from {
+    max-width: 0;
+  }
+  to {
+    max-width: 100%;
+  }
+}
+
+.animate-typewriter {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter 0.8s steps(40, end) forwards;
+}

@@ -20,11 +20,17 @@ export const SIDEBAR_LINKS = [
     imgUrl: "/icons/video.svg",
   },
   {
+    label: "Transcriptions",
+    route: "/transcriptions",
+    imgUrl: "/icons/video.svg",
+  },
+  {
     label: "Personal Room",
     route: "/personal-room",
     imgUrl: "/icons/add-personal.svg",
   },
 ] as const;
+
 
 export const avatarImages = [
   "/images/avatar-1.jpeg",
