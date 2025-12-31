@@ -21,6 +21,7 @@ type TranslatorState = {
   mutedSpeakersForTTS: string[];
   ttsEnabled: boolean;
   ttsVoice: string;
+  ttsVolume: number;
   isTtsPlaying: boolean;
   setEnabled: (enabled: boolean) => void;
   setAutoTranslateEnabled: (enabled: boolean) => void;
@@ -29,6 +30,7 @@ type TranslatorState = {
   setSpeakerLang: (lang: string) => void;
   setTtsEnabled: (enabled: boolean) => void;
   setTtsVoice: (voice: string) => void;
+  setTtsVolume: (volume: number) => void;
   setIsTtsPlaying: (playing: boolean) => void;
   upsertCaption: (caption: CaptionEntry) => void;
   updateCaptionTranslation: (utteranceId: string, translatedText: string) => void;
@@ -47,6 +49,7 @@ export const useTranslatorStore = create<TranslatorState>((set) => ({
   mutedSpeakersForTTS: [],
   ttsEnabled: false,
   ttsVoice: "",
+  ttsVolume: 0.75,
   isTtsPlaying: false,
   setEnabled: (enabled) => set({ enabled }),
   setAutoTranslateEnabled: (enabled) => set({ autoTranslateEnabled: enabled }),
@@ -55,6 +58,7 @@ export const useTranslatorStore = create<TranslatorState>((set) => ({
   setSpeakerLang: (speakerLang) => set({ speakerLang }),
   setTtsEnabled: (ttsEnabled) => set({ ttsEnabled }),
   setTtsVoice: (ttsVoice) => set({ ttsVoice }),
+  setTtsVolume: (ttsVolume) => set({ ttsVolume: Math.min(1, Math.max(0, ttsVolume)) }),
   setIsTtsPlaying: (isTtsPlaying) => set({ isTtsPlaying }),
   upsertCaption: (caption) =>
     set((state) => {

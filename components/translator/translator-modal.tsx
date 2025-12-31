@@ -38,6 +38,7 @@ export const TranslatorModal = ({
   const speakerLang = useTranslatorStore((state) => state.speakerLang);
   const ttsEnabled = useTranslatorStore((state) => state.ttsEnabled);
   const ttsVoice = useTranslatorStore((state) => state.ttsVoice);
+  const ttsVolume = useTranslatorStore((state) => state.ttsVolume);
 
   const handleSave = async () => {
     if (!user) return;
@@ -55,6 +56,7 @@ export const TranslatorModal = ({
             speakerLang,
             ttsEnabled,
             ttsVoice,
+            ttsVolume,
           },
         },
       });

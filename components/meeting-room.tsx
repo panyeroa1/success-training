@@ -58,6 +58,7 @@ export const MeetingRoom = () => {
   );
   const targetLang = useTranslatorStore((state) => state.targetLang);
   const speakerLang = useTranslatorStore((state) => state.speakerLang);
+  const ttsVolume = useTranslatorStore((state) => state.ttsVolume);
   const setEnabled = useTranslatorStore((state) => state.setEnabled);
   const setAutoTranslateEnabled = useTranslatorStore(
     (state) => state.setAutoTranslateEnabled
@@ -67,6 +68,7 @@ export const MeetingRoom = () => {
   const setSpeakerLang = useTranslatorStore((state) => state.setSpeakerLang);
   const setTtsEnabled = useTranslatorStore((state) => state.setTtsEnabled);
   const setTtsVoice = useTranslatorStore((state) => state.setTtsVoice);
+  const setTtsVolume = useTranslatorStore((state) => state.setTtsVolume);
   const upsertCaption = useTranslatorStore((state) => state.upsertCaption);
   const updateCaptionTranslation = useTranslatorStore(
     (state) => state.updateCaptionTranslation
@@ -140,6 +142,9 @@ export const MeetingRoom = () => {
       }
       if (typeof data.ttsVoice === "string") {
         setTtsVoice(data.ttsVoice);
+      }
+      if (typeof data.ttsVolume === "number") {
+        setTtsVolume(data.ttsVolume);
       }
     }
 

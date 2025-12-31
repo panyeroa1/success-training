@@ -23,11 +23,11 @@ export const TranslatorSettingsForm = () => {
   const setShowOriginal = useTranslatorStore((state) => state.setShowOriginal);
   const setSpeakerLang = useTranslatorStore((state) => state.setSpeakerLang);
   const ttsEnabled = useTranslatorStore((state) => state.ttsEnabled);
-  const ttsVoice = useTranslatorStore((state) => state.ttsVoice);
   const cartesiaVoice = useTranslatorStore((state) => state.ttsVoice);
   const setCartesiaVoice = useTranslatorStore((state) => state.setTtsVoice);
   const setTtsEnabled = useTranslatorStore((state) => state.setTtsEnabled);
-  const setTtsVoice = useTranslatorStore((state) => state.setTtsVoice);
+  const ttsVolume = useTranslatorStore((state) => state.ttsVolume);
+  const setTtsVolume = useTranslatorStore((state) => state.setTtsVolume);
 
   return (
     <div className="space-y-4">
@@ -171,6 +171,35 @@ export const TranslatorSettingsForm = () => {
 
       <div className="rounded-xl border border-white/10 bg-[#0F1720] px-4 py-3">
         <label
+          htmlFor="translator-tts-volume"
+          className="text-sm font-semibold text-white"
+        >
+          Translation volume
+        </label>
+        <p className="text-xs text-white/60">
+          Standard listening level for read-aloud captions.
+        </p>
+        <input
+          id="translator-tts-volume"
+          aria-label="Translation volume"
+          title="Translation volume"
+          type="range"
+          min={30}
+          max={100}
+          step={1}
+          value={Math.round((ttsVolume || 0) * 100)}
+          onChange={(event) =>
+            setTtsVolume(Number(event.target.value) / 100)
+          }
+          className="mt-3 w-full accent-emerald-500"
+        />
+        <div className="mt-1 text-right text-xs text-white/60">
+          {Math.round((ttsVolume || 0) * 100)}%
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-[#0F1720] px-4 py-3">
+        <label
           htmlFor="translator-voice"
           className="text-sm font-semibold text-white"
         >
@@ -178,8 +207,8 @@ export const TranslatorSettingsForm = () => {
         </label>
         <Input
           id="translator-voice"
-          aria-label="Gemini voice"
-          title="Gemini voice"
+          aria-label="Cartesia voice ID"
+          title="Cartesia voice ID"
           value={cartesiaVoice}
           onChange={(event) => setCartesiaVoice(event.target.value)}
           placeholder="e.g. 9c7e6604-52c6-424a-9f9f-2c4ad89f3bb9"
