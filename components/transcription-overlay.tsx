@@ -20,6 +20,7 @@ interface CustomTranscript {
   text: string;
   speaker: string;
   timestamp: number;
+  isFinal: boolean;
 }
 
 interface TranscriptionOverlayProps {
@@ -42,6 +43,7 @@ export const TranscriptionOverlay = ({
   const call = useCall();
   const streamCaptions = useCallClosedCaptions();
   const [lines, setLines] = useState<CaptionLine[]>([]);
+  const [sbUserId, setSbUserId] = useState<string | null>(null);
   const lastCaptionRef = useRef<string>("");
   const savedIdsRef = useRef<Set<string>>(new Set());
 
@@ -50,16 +52,28 @@ export const TranscriptionOverlay = ({
 
   // Initialize anonymous auth on mount
   useEffect(() => {
+    let mounted = true;
     signInAnonymously().then(({ success, user }) => {
-      if (success) {
-        console.log("Authenticated anonymously to Supabase:", user?.id);
+      if (mounted && success && user) {
+        console.log("[TranscriptionOverlay] Authenticated anonymously to Supabase:", user.id);
+        setSbUserId(user.id);
+      } else if (mounted) {
+        console.warn("[TranscriptionOverlay] Supabase anonymous auth failed or no user returned.");
       }
     });
+    return () => { mounted = false; };
   }, []);
 
   // Handle translation and saving (Strict: Fetch -> Translate -> Save)
   const processTranscriptionFlow = useCallback(
     async (line: CaptionLine) => {
+      if (!sbUserId && !userId) {
+        console.warn("[TranscriptionOverlay] No user ID available for saving. Retrying in 1s...");
+        setTimeout(() => processTranscriptionFlow(line), 1000);
+        return;
+      }
+
+      console.log(`[TranscriptionOverlay] Processing flow for: "${line.text}"`);
       const originalText = line.text;
       let translatedText: string | null = null;
 
@@ -68,14 +82,17 @@ export const TranscriptionOverlay = ({
         translatedText = await getTranslation(originalText, targetLanguage);
         
         if (translatedText) {
+          console.log(`[TranscriptionOverlay] Gemini translated: "${translatedText}"`);
           // Update UI with translation
           setLines((prev) =>
             prev.map((l) => (l.id === line.id ? { ...l, translatedText: translatedText! } : l))
           );
 
           // 2. Save translation to Supabase (Strict SCHEMA alignment with meeting_id)
-          await saveTranslation({
-            user_id: userId || line.speakerId || "anonymous",
+          const activeUserId = userId || sbUserId || line.speakerId || "anonymous";
+          console.log(`[TranscriptionOverlay] Saving translation to Supabase: user_id=${activeUserId}, meeting_id=${meetingId}`);
+          const { success, error } = await saveTranslation({
+            user_id: activeUserId,
             meeting_id: meetingId,
             source_lang: "auto",
             target_lang: targetLanguage,
@@ -83,7 +100,15 @@ export const TranscriptionOverlay = ({
             translated_text: translatedText,
           });
           
+          if (success) {
+            console.log(`[TranscriptionOverlay] Successfully saved translation.`);
+          } else {
+            console.error(`[TranscriptionOverlay] Failed to save translation:`, error);
+          }
+          
           return; // Flow complete for translated case
+        } else {
+          console.warn(`[TranscriptionOverlay] Translation failed or returned empty.`);
         }
       }
 
@@ -95,7 +120,7 @@ export const TranscriptionOverlay = ({
         text: originalText,
       });
     },
-    [roomName, meetingId, userId, targetLanguage]
+    [roomName, meetingId, userId, sbUserId, targetLanguage]
   );
 
   // Trigger flow
@@ -160,7 +185,9 @@ export const TranscriptionOverlay = ({
       timestamp: Date.now(),
     };
 
-    saveToSupabase(newLine);
+    if (customTranscript.isFinal) {
+      saveToSupabase(newLine);
+    }
 
     setLines((prev) => {
       const existingIndex = prev.findIndex(

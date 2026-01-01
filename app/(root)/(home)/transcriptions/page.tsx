@@ -30,38 +30,20 @@ interface GroupedTranscription {
 }
 
 export default function TranscriptionsPage() {
-  const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
+  const [translations, setTranslations] = useState<Translation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isLoaded } = useUser();
 
   useEffect(() => {
-    const fetchAllData = async () => {
+    const fetchHistory = async () => {
       try {
-        const [transResponse, translatResponse] = await Promise.all([
-          fetch("/api/transcription"),
-          fetch("/api/translate/history") // Mocking this for now or I should create it
-        ]);
-
-        if (!transResponse.ok) throw new Error("Failed to fetch transcriptions");
+        const response = await fetch("/api/translate/history");
         
-        const transData = await transResponse.json();
+        if (!response.ok) throw new Error("Failed to fetch translation history");
         
-        let translationsData: Translation[] = [];
-        if (translatResponse.ok) {
-          const data = await translatResponse.json();
-          translationsData = data.translations || [];
-        }
-
-        // Map transcriptions and their translations (Correlating by text and meeting_id)
-        const combined = transData.transcriptions.map((t: Transcription) => {
-          const translation = translationsData.find(
-            (tr) => tr.original_text === t.text && tr.meeting_id === t.room_name
-          );
-          return { ...t, translation };
-        });
-
-        setTranscriptions(combined);
+        const data = await response.json();
+        setTranslations(data.translations || []);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load data");
       } finally {
@@ -70,18 +52,19 @@ export default function TranscriptionsPage() {
     };
 
     if (isLoaded) {
-      fetchAllData();
+      fetchHistory();
     }
   }, [isLoaded]);
 
-  // Group transcriptions by room_name
-  const groupedTranscriptions = transcriptions.reduce<GroupedTranscription[]>(
-    (acc, transcription) => {
-      const existing = acc.find((g) => g.room_name === transcription.room_name);
+  // Group by meeting_id (which acts as the room name)
+  const groupedData = translations.reduce<{ meeting_id: string; entries: Translation[] }[]>(
+    (acc, entry) => {
+      const roomName = entry.meeting_id || "unknown";
+      const existing = acc.find((g) => g.meeting_id === roomName);
       if (existing) {
-        existing.entries.push(transcription);
+        existing.entries.push(entry);
       } else {
-        acc.push({ room_name: transcription.room_name, entries: [transcription] });
+        acc.push({ meeting_id: roomName, entries: [entry] });
       }
       return acc;
     },
@@ -94,7 +77,7 @@ export default function TranscriptionsPage() {
 
   return (
     <section className="flex size-full flex-col gap-10 text-white">
-      <h1 className="text-3xl font-bold">Transcriptions</h1>
+      <h1 className="text-3xl font-bold">Transcriptions & Translations</h1>
 
       {error && (
         <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-red-400">
@@ -102,27 +85,29 @@ export default function TranscriptionsPage() {
         </div>
       )}
 
-      {groupedTranscriptions.length === 0 ? (
+      {groupedData.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-white/10 bg-white/5 p-10">
-          <p className="text-lg text-white/60">No transcriptions yet</p>
+          <p className="text-lg text-white/60">No data found</p>
           <p className="text-sm text-white/40">
-            Start a meeting and enable captions to see transcriptions here.
+            Start a meeting and enable translations to see history here.
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
-          {groupedTranscriptions.map((group) => (
+          {groupedData.map((group) => (
             <div
-              key={group.room_name}
+              key={group.meeting_id}
               className="rounded-lg border border-white/10 bg-white/5 p-6"
             >
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold">
-                  Room: {group.room_name.slice(0, 8)}...
+                  Room: {group.meeting_id.slice(0, 8)}...
                 </h2>
-                <span className="text-sm text-white/40">
-                  {group.entries.length} entries
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm text-white/40">
+                    {group.entries.length} entries
+                  </span>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -134,34 +119,34 @@ export default function TranscriptionsPage() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium uppercase text-emerald-400">
-                          {entry.sender}
+                          {entry.user_id.slice(0, 8)}...
                         </span>
                         <span className="text-[10px] text-white/30">
                           {new Date(entry.created_at).toLocaleTimeString()}
                         </span>
                       </div>
-                      <p className="text-sm text-white/80">{entry.text}</p>
-                      {entry.translation && (
-                        <p className="mt-1 text-xs font-medium italic text-emerald-400">
-                          {entry.translation.translated_text}
-                        </p>
-                      )}
+                      <p className="text-sm text-white/80">{entry.original_text}</p>
+                      <p className="mt-1 text-xs font-medium italic text-emerald-400">
+                        {entry.translated_text}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <button
-                onClick={() => {
-                  const text = group.entries
-                    .map((e) => `[${e.sender}]: ${e.text}`)
-                    .join("\n");
-                  navigator.clipboard.writeText(text);
-                }}
-                className="mt-4 rounded bg-white/10 px-4 py-2 text-sm transition hover:bg-white/20"
-              >
-                Copy Transcript
-              </button>
+              <div className="mt-4 flex gap-4">
+                <button
+                  onClick={() => {
+                    const text = group.entries
+                      .map((e) => `[Text]: ${e.original_text}\n[Translation]: ${e.translated_text}`)
+                      .join("\n\n");
+                    navigator.clipboard.writeText(text);
+                  }}
+                  className="rounded bg-white/10 px-4 py-2 text-sm transition hover:bg-white/20"
+                >
+                  Copy All
+                </button>
+              </div>
             </div>
           ))}
         </div>

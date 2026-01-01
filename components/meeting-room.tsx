@@ -10,7 +10,8 @@ import {
   useCall,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { ClosedCaption, LayoutList, Users, ChevronDown } from "lucide-react";
+import { ClosedCaption, LayoutList, Users, ChevronDown, Languages } from "lucide-react";
+import { signInAnonymously } from "@/lib/supabase";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -49,10 +50,23 @@ export const MeetingRoom = () => {
   const [layout, setLayout] = useState<CallLayoutType>("speaker-left");
   const [sttProvider, setSTTProvider] = useState<STTProvider>("stream");
   const [translationLanguage, setTranslationLanguage] = useState<string>("off");
+  const [sbUserId, setSbUserId] = useState<string | null>(null);
+
+  // Initialize early anonymous auth
+  useEffect(() => {
+    signInAnonymously().then(({ success, user }) => {
+      if (success && user) {
+        console.log("[MeetingRoom] Pre-authenticated anonymously to Supabase:", user.id);
+        setSbUserId(user.id);
+      }
+    });
+  }, []);
+
   const [customTranscript, setCustomTranscript] = useState<{
     text: string;
     speaker: string;
     timestamp: number;
+    isFinal: boolean;
   } | null>(null);
 
   const call = useCall();
@@ -88,6 +102,7 @@ export const MeetingRoom = () => {
         text: webSpeech.transcript.text,
         speaker: user?.firstName || user?.username || "You",
         timestamp: webSpeech.transcript.timestamp,
+        isFinal: webSpeech.transcript.isFinal,
       });
     }
   }, [webSpeech.transcript, sttProvider, user]);
@@ -98,6 +113,7 @@ export const MeetingRoom = () => {
         text: deepgram.transcript.text,
         speaker: user?.firstName || user?.username || "You",
         timestamp: deepgram.transcript.timestamp,
+        isFinal: deepgram.transcript.isFinal,
       });
     }
   }, [deepgram.transcript, sttProvider, user]);
@@ -296,6 +312,51 @@ export const MeetingRoom = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className={cn(controlButtonClasses, "cursor-pointer")}
+            title="Translator (Select Language)"
+          >
+            <div className="flex items-center gap-1">
+              <Languages 
+                size={20} 
+                className={cn("text-white transition-colors", {
+                  "text-emerald-400": translationLanguage !== "off"
+                })} 
+              />
+              <ChevronDown size={14} className="text-white/50" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="border-white/10 bg-black/90 text-white backdrop-blur-lg">
+            <div className="px-2 py-1.5 text-[10px] font-bold uppercase text-white/40">
+              Target Language
+            </div>
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem
+              className={cn("cursor-pointer hover:bg-white/10", {
+                "bg-white/10 text-emerald-400": translationLanguage === "off"
+              })}
+              onClick={() => setTranslationLanguage("off")}
+            >
+              Translation Off
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-white/10" />
+            {[
+              "Spanish", "French", "German", "Chinese", "Japanese", "Hindi"
+            ].map((lang) => (
+              <DropdownMenuItem
+                key={lang}
+                className={cn("cursor-pointer hover:bg-white/10", {
+                  "bg-white/10 text-emerald-400": translationLanguage === lang
+                })}
+                onClick={() => setTranslationLanguage(lang)}
+              >
+                {lang}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <CallStatsButton />
 
