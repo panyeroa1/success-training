@@ -32,9 +32,11 @@ export async function getTranslation(
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Translation API error: ${response.statusText}`);
-    }
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`[TranslateAPI] Route Call Failed (${response.status}):`, errText.slice(0, 200));
+          throw new Error(`Translation API error: ${response.statusText}`);
+        }
 
     const data = await response.json();
     return data.translated_text;
