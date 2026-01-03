@@ -69,7 +69,7 @@ body::before {
 /* Main speaker/host video - responsive height and width */
 .str-video__speaker-layout__spotlight {
   width: 100%;
-  height: calc(100vh - 120px) !important; /* Full height minus controls */
+  height: 100vh !important; /* Full viewport height */
   max-height: 100vh !important;
   min-height: 400px;
 }
@@ -82,7 +82,7 @@ body::before {
 
 /* Participant bar responsiveness - Top Aligned */
 .str-video__speaker-layout__participants-bar {
-  height: calc(100vh - 120px) !important;
+  height: 100vh !important; /* Full viewport height */
   max-height: 100vh !important;
   overflow-y: auto;
   justify-content: flex-start !important; /* Top align */
