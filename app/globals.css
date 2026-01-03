@@ -62,11 +62,40 @@ body::before {
 .str-video__speaker-layout__wrapper {
   max-height: none;
   height: 100%;
+  width: 100%;
+}
+
+/* Main speaker/host video - responsive height and width */
+.str-video__speaker-layout__spotlight {
+  width: 100%;
+  height: calc(100vh - 160px); /* Account for control bar and padding */
+  max-height: calc(100vh - 160px);
+  min-height: 300px;
+}
+
+.str-video__speaker-layout__spotlight video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Participant bar responsiveness */
+.str-video__speaker-layout__participants-bar {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
 }
 
 .str-video__participant-view {
   max-width: none;
   border-radius: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.str-video__participant-view video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .str-video__call {
