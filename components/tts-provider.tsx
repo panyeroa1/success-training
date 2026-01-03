@@ -2,11 +2,13 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
-// --- CONFIGURATION ---
-const CARTESIA_API_KEY = "sk_car_7AabaMKbctZAy89wTw9Xtf";
+// --- CONFIGURATION (from environment variables) ---
+const CARTESIA_API_KEY = process.env.NEXT_PUBLIC_CARTESIA_API_KEY || "";
+const CARTESIA_MODEL_ID = process.env.NEXT_PUBLIC_CARTESIA_MODEL_ID || "sonic-3";
+const CARTESIA_VOICE_ID = process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || "9c7e6604-52c6-424a-9f9f-2c4ad89f3bb9";
 const CARTESIA_URL = "https://api.cartesia.ai/tts/bytes";
-const SUPABASE_URL = "https://rcbuikbjqgykssiatxpo.supabase.co";
-const SUPABASE_KEY = "sb_publishable_uTIwEo4TJBo_YkX-OWN9qQ_5HJvl4c5";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1/translations`;
 const FETCH_INTERVAL_MS = 3000;
 
@@ -124,9 +126,9 @@ export function TTSProvider({ children, initialUserId }: { children: React.React
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model_id: "sonic-3",
+          model_id: CARTESIA_MODEL_ID,
           transcript: text,
-          voice: { mode: "id", id: "9c7e6604-52c6-424a-9f9f-2c4ad89f3bb9" },
+          voice: { mode: "id", id: CARTESIA_VOICE_ID },
           output_format: {
             container: "mp3",
             encoding: "mp3",
@@ -310,7 +312,7 @@ export function TTSProvider({ children, initialUserId }: { children: React.React
       if (mainLoopInterval) clearInterval(mainLoopInterval);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [targetUserId, hasUserInteracted]);
+  }, [targetUserId, hasUserInteracted, selectedSinkId]);
 
   const enableAudio = () => {
     setHasUserInteracted(true);

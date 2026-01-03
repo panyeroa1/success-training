@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gpt-oss:120b";
-const OLLAMA_API_URL = "https://ollama.com/api";
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "https://ollama.com/api";
+const OLLAMA_API_URL = OLLAMA_BASE_URL.replace(/\/v1\/?$/, ""); // Normalize: remove trailing /v1
 // Default to TRUE unless explicitly disabled with "0"
 const USE_GOOGLE_FALLBACK = process.env.GOOGLE_FREE_TRANSLATE !== "0";
 
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
     if (OLLAMA_API_KEY) {
       try {
         console.log(`[TranslateAPI] Attempting Ollama Cloud translation (${OLLAMA_MODEL})...`);
-        const ollamaResponse = await fetch(`${OLLAMA_API_URL}/chat`, {
+        // Use OpenAI-compatible /v1/chat/completions endpoint
+        const ollamaResponse = await fetch(`${OLLAMA_API_URL}/v1/chat/completions`, {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
@@ -50,7 +52,8 @@ export async function POST(request: NextRequest) {
 
         if (ollamaResponse.ok) {
           const data = await ollamaResponse.json();
-          const translatedText = data.message?.content?.trim();
+          // OpenAI-compatible response format: data.choices[0].message.content
+          const translatedText = data.choices?.[0]?.message?.content?.trim() || data.message?.content?.trim();
           if (translatedText) {
             console.log("[TranslateAPI] Ollama success");
             return NextResponse.json({ 
