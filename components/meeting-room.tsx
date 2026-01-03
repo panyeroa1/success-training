@@ -265,14 +265,14 @@ export const MeetingRoom = () => {
 
   return (
     <TTSProvider initialUserId={effectiveUserId} targetLanguage={translationLanguage} meetingId={call?.id || ""}>
-      <div className="relative min-h-screen w-full overflow-hidden text-white">
-        <div className="relative flex size-full items-center justify-center px-4 pb-28 pt-4">
+      <div className="relative h-screen w-full overflow-hidden text-white">
+        <div className="relative flex size-full items-center justify-center">
           <div className="flex size-full items-center">
             <CallLayout />
           </div>
 
           <div
-            className={cn("ml-2 hidden h-[calc(100vh_-_120px)]", {
+            className={cn("ml-2 hidden h-full", {
               "show-block": showParticipants,
             })}
           >
