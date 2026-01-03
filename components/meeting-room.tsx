@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CallParticipantsList,
   CallStatsButton,
   CallingState,
   PaginatedGridLayout,
@@ -48,6 +47,7 @@ import { TranscriptionOverlay } from "./transcription-overlay";
 import { TranslationPanel } from "./translation-panel";
 import { TTSProvider } from "./tts-provider";
 import { ChatPanel } from "@/components/chat-panel";
+import { ParticipantsPanel } from "@/components/participants-panel";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right" | "gallery";
 type STTProvider = "stream" | "webspeech" | "deepgram";
@@ -332,17 +332,7 @@ export const MeetingRoom = () => {
           {(showParticipants || showChat || showTranslation) && (
             <div className="fixed right-0 top-0 z-50 h-screen w-full max-w-[350px] border-l border-white/10 bg-[#1c1f2e] p-6 transition-all duration-300 ease-in-out">
               {showParticipants && (
-                <div className="flex h-full flex-col">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-bold">Participants</h2>
-                    <button onClick={() => setShowParticipants(false)} className="text-white/50 hover:text-white">
-                      ✕
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto pr-1">
-                    <CallParticipantsList onClose={() => setShowParticipants(false)} />
-                  </div>
-                </div>
+                <ParticipantsPanel onClose={() => setShowParticipants(false)} />
               )}
               {showChat && (
                 <ChatPanel onClose={() => setShowChat(false)} user={user} effectiveUserId={effectiveUserId} />

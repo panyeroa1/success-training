@@ -4,10 +4,12 @@ Status: DONE
 Owner: Miles
 
 Start log:
+
 - Timestamp: 2025-12-31 10:25
 - Plan: Add volume slider for TTS, improve error handling in TTS API and client, and fix IDE warnings.
 
 End log:
+
 - Timestamp: 2025-12-31 10:30
 - Changed:
   - Added volume control to translation settings and visual feedback.
@@ -50,19 +52,23 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-01 06:45
 Current behavior or state:
+
 - Captions are large, bold, and use emerald speaker stickers.
 - Captions use the default call language.
 
 Plan and scope for this task:
+
 - Refine `TranscriptionOverlay` to use thinner (font-light) and smaller text.
 - Change rendering to a classic subtitle style (text-shadow instead of background boxes).
 - Update `MeetingRoom` to use `language: 'auto'` for auto-detection and original language.
 
 Files or modules expected to change:
+
 - components/meeting-room.tsx
 - components/transcription-overlay.tsx
 
 Risks or things to watch out for:
+
 - Readability of smaller text on complex backgrounds.
 
 WORK CHECKLIST
@@ -75,20 +81,25 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-01 06:50
 Summary of what actually changed:
+
 - Updated `TranscriptionOverlay` with thinner fonts, smaller sizes, and high-contrast text shadows for a professional subtitle look.
 - Enabled language auto-detection in the Stream `startClosedCaptions` call.
 
 Files actually modified:
+
 - components/meeting-room.tsx
 - components/transcription-overlay.tsx
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 Known limitations or follow-up tasks:
+
 - None
 
 ------------------------------------------------------------
@@ -106,9 +117,11 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-01 07:55
 Current behavior or state:
+
 - Transcriptions are saved in Supabase, but no automatic translation is performed.
 
 Plan and scope for this task:
+
 - Create a translation API using Gemini (models/gemini-flash-lite-latest).
 - Implement saving translated text to the Supabase translations table.
 - Add a language selector to the MeetingRoom UI.
@@ -116,12 +129,14 @@ Plan and scope for this task:
 - Display translated captions in the TranscriptionOverlay.
 
 Files or modules expected to change:
+
 - app/api/translate/route.ts
 - lib/translate-service.ts
 - components/meeting-room.tsx
 - components/transcription-overlay.tsx
 
 Risks or things to watch out for:
+
 - API latency during real-time meetings.
 - Gemini API quota/limits.
 
@@ -147,19 +162,23 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 00:00
 Current behavior or state:
+
 - Using generic `CallControls` which lacks a dedicated "Invite" button.
 - Users find "sharing" and "joining" confusing or limited.
 
 Plan and scope for this task:
+
 - Replace `CallControls` with granular buttons (Mic, Cam, Screen Share).
 - Add an "Invite" button to copy meeting link.
 - Update `EndCallButton` logic to show "Leave" for guests.
 
 Files or modules expected to change:
+
 - components/meeting-room.tsx
 - components/end-call-button.tsx
 
 Risks or things to watch out for:
+
 - Stream SDK state sync for granular toggles.
 
 WORK CHECKLIST
@@ -173,18 +192,22 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 00:20
 Summary of what actually changed:
+
 - Implemented custom control bar with granular toggles.
 - Added "Invite" button for easy meeting link sharing.
 - Enhanced `EndCallButton` with dual "Leave/End" logic.
 
 Files actually modified:
+
 - components/meeting-room.tsx
 - components/end-call-button.tsx
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 Task ID: T-0016
@@ -200,19 +223,23 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 00:30
 Current behavior or state:
+
 - Host screen/Speaker view was not fully responsive to viewport height/width (Fixed).
 - `useMeetingSpeakers` hook relies on `transcript_segments` table which is now bypassed for live speech.
 
 Plan and scope for this task:
+
 - Document responsive UI changes in task log (Done).
 - Refactor `useMeetingSpeakers` to use Stream SDK participants instead of DB polling.
 - Ensure the speaker list updates in real-time as users join/leave the call.
 
 Files or modules expected to change:
+
 - app/globals.css (Already modified)
 - hooks/use-meeting-speakers.ts
 
 Risks or things to watch out for:
+
 - Mapping participant IDs to display names if Clerk names aren't available for everyone.
 
 WORK CHECKLIST
@@ -226,18 +253,22 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 00:35
 Summary of what actually changed:
+
 - Finalized host screen responsiveness in `globals.css`.
 - Switched `useMeetingSpeakers` from Supabase polling to Stream SDK's `useParticipants` hook.
 - Improved naming logic to use Stream's participant names with ID fallback.
 
 Files actually modified:
+
 - app/globals.css
 - hooks/use-meeting-speakers.ts
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 Task ID: T-0017
@@ -253,17 +284,21 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 00:55
 Current behavior or state:
+
 - Host video has padding/margins preventing full expansion.
 - Sidebar participants are not strictly top-aligned (or default flex implementation).
 
 Plan and scope for this task:
+
 - Update `globals.css` to force host spotlight to `100vh - controls_height`.
 - Apply `justify-content: flex-start` to sidebar to stack videos at the top.
 
 Files or modules expected to change:
+
 - app/globals.css
 
 Risks or things to watch out for:
+
 - Overlapping the control bar.
 
 WORK CHECKLIST
@@ -275,16 +310,20 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 01:05
 Summary of what actually changed:
+
 - Forced `.str-video__speaker-layout__spotlight` to consume full available height (`calc(100vh - 120px)`) and width.
 - Applied `justify-content: flex-start` to `.str-video__speaker-layout__participants-bar` to ensure top alignment.
 
 Files actually modified:
+
 - app/globals.css
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 Task ID: T-0019
@@ -300,17 +339,21 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 01:23
 Current behavior or state:
+
 - Grid view was not full-screen and lacked a dedicated "Gallery" mode option.
 
 Plan and scope for this task:
+
 - Update CSS to force `PaginatedGridLayout` to be full-screen (`100vh`/`100vw`).
 - Add "Gallery" to `CallLayoutType` and layout switcher.
 
 Files or modules expected to change:
+
 - app/globals.css
 - components/meeting-room.tsx
 
 Risks or things to watch out for:
+
 - Overlapping UI elements.
 
 WORK CHECKLIST
@@ -323,18 +366,22 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 01:25
 Summary of what actually changed:
+
 - Forced `.str-video__paginated-grid-layout` to full viewport dimensions.
 - Added "Gallery" mode which utilizes the immersive grid layout.
 - Set grid videos to `object-fit: cover` for a cohesive aesthetic.
 
 Files actually modified:
+
 - app/globals.css
 - components/meeting-room.tsx
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 Task ID: T-0020
@@ -350,19 +397,23 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 01:30
 Current behavior or state:
+
 - No chat functionality exists in the meeting room.
 
 Plan and scope for this task:
+
 - Create `ChatPanel` component using Stream custom events.
 - Implement real-time message broadcasting and receiving.
 - Add Chat toggle to the control bar.
 - Integrate `ChatPanel` in the right sidebar.
 
 Files or modules expected to change:
+
 - components/chat-panel.tsx (NEW)
 - components/meeting-room.tsx
 
 Risks or things to watch out for:
+
 - State management for messages when sidebar is toggled.
 
 WORK CHECKLIST
@@ -376,18 +427,22 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 01:40
 Summary of what actually changed:
+
 - Implemented real-time chat using Stream custom events.
 - Added a dedicated `ChatPanel` with auto-scroll and message history.
 - Integrated Chat toggle in the control bar.
 
 Files actually modified:
+
 - components/chat-panel.tsx
 - components/meeting-room.tsx
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 ------------------------------------------------------------
@@ -405,18 +460,22 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 01:30
 Current behavior or state:
+
 - Participants sidebar is difficult to view or toggle correctly due to CSS/layout issues.
 
 Plan and scope for this task:
+
 - Refactor sidebar layout in `MeetingRoom` to use a more robust container.
 - Fix CSS classes for toggling visibility.
 - Ensure the sidebar correctly displays Stream SDK's `CallParticipantsList`.
 
 Files or modules expected to change:
+
 - components/meeting-room.tsx
 - app/globals.css
 
 Risks or things to watch out for:
+
 - Overlapping with full-screen video background.
 
 WORK CHECKLIST
@@ -429,16 +488,20 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 01:40
 Summary of what actually changed:
+
 - Refactored sidebar container to support both Participants and Chat with mutual exclusion.
 - Fixed z-indexing and layout to ensure sidebars are visible over full-screen videos.
 
 Files actually modified:
+
 - components/meeting-room.tsx
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 ------------------------------------------------------------
@@ -456,19 +519,23 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 01:40
 Current behavior or state:
+
 - Users reported issues with camera/mic permissions and signaling robustness.
 
 Plan and scope for this task:
+
 - Update call creation to include the creator as an admin member.
 - Refine `useGetCallById` to handle call loading more robustly.
 - Add proactive media state repair in `MeetingRoom` to ensure devices are enabled if allowed.
 
 Files or modules expected to change:
+
 - components/meeting-type-list.tsx
 - hooks/use-get-call-by-id.ts
 - components/meeting-room.tsx
 
 Risks or things to watch out for:
+
 - Browser permission prompts.
 
 WORK CHECKLIST
@@ -480,10 +547,12 @@ WORK CHECKLIST
 Title: Fix ChatPanel IDE Import Error
 
 Start log:
+
 - Timestamp: 2026-01-04 01:36
 - Plan: Standardize ChatPanel import to use absolute path alias to resolve IDE resolution issues.
 
 End log:
+
 - Timestamp: 2026-01-04 01:37
 - Changed: Updated `MeetingRoom.tsx` to use `@/components/chat-panel`.
 - Tests: npm run build (PASS).
@@ -493,19 +562,23 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 01:45
 Summary of what actually changed:
+
 - Ensured call creators have 'admin' role for guaranteed permissions.
 - Added a `repairMediaState` effect in `MeetingRoom` to proactively enable mic/cam if signaling is slow.
 - Enhanced logging for debugging Stream signaling.
 
 Files actually modified:
+
 - components/meeting-type-list.tsx
 - hooks/use-get-call-by-id.ts
 - components/meeting-room.tsx
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 ------------------------------------------------------------
@@ -523,21 +596,25 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 01:38
 Current behavior or state:
+
 - Sidebars have varying heights and implementations (Sheets vs inline).
 - Sidebars can overlap with the bottom control bar.
 
 Plan and scope for this task:
+
 - Create `TranslationPanel` component.
 - Refactor `MeetingRoom.tsx` to handle all sidebars (Participants, Chat, Translation) in a unified container.
 - Constrain sidebar height to `calc(100vh - 80px)` to avoid overlap.
 - Add mutual exclusion for all three sidebars.
 
 Files or modules expected to change:
+
 - components/meeting-room.tsx
 - components/translation-panel.tsx (NEW)
 - components/translation-sidebar.tsx
 
 Risks or things to watch out for:
+
 - Z-index issues with tooltips or dropdowns inside the sidebars.
 
 WORK CHECKLIST
@@ -551,19 +628,23 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 01:40
 Summary of what actually changed:
+
 - Created `TranslationPanel` to standardize translation settings.
 - Refactored `MeetingRoom` to use a unified `Sheet`-like container for all sidebars.
 - Set a strict height constraint (`calc(100vh - 88px)`) to prevent overlap with the control bar.
 - Implemented mutual exclusion for Participants, Chat, and Translation.
 
 Files actually modified:
+
 - components/meeting-room.tsx
 - components/translation-panel.tsx
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS
 
 ------------------------------------------------------------
@@ -581,20 +662,24 @@ START LOG (fill this before you start coding)
 
 Timestamp: 2026-01-04 01:41
 Current behavior or state:
+
 - "Double sidebar" occurs when using `SpeakerLayout` with custom sidebars.
 - Sidebars are constrained to stop above the control bar, but user wants them full height and "on top".
 
 Plan and scope for this task:
+
 - Make the custom sidebar container `100vh`.
 - Set `z-index: 60` for the sidebar to ensure it sits above the control bar (`z-50`).
 - Resolve the "double sidebar" issue by hiding the internal participants bar when a custom sidebar is active.
 - Ensure all three custom sidebars (Participants, Chat, Translation) follow this new layout.
 
 Files or modules expected to change:
+
 - components/meeting-room.tsx
 - app/globals.css
 
 Risks or things to watch out for:
+
 - Blocking critical meeting controls if the sidebar is open on mobile.
 
 WORK CHECKLIST
@@ -608,16 +693,20 @@ END LOG (fill this after you finish coding and testing)
 
 Timestamp: 2026-01-04 01:43
 Summary of what actually changed:
+
 - Updated the sidebar to `h-screen` and `z-50`.
 - Added CSS logic to hide the built-in Stream participants list when a custom sidebar is open.
 - Refactored `MeetingRoom.tsx` to handle the new layout constraints.
 
 Files actually modified:
+
 - components/meeting-room.tsx
 - app/globals.css
 
 How it was tested:
+
 - npm run build
 
 Test result:
+
 - PASS

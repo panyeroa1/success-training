@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCall } from "@stream-io/video-react-sdk";
-import { Send } from "lucide-react";
+import { MessageSquare, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { SidebarPanel } from "./sidebar-panel";
 
 interface Message {
   id: string;
@@ -30,7 +31,6 @@ export function ChatPanel({ onClose, user, effectiveUserId }: ChatPanelProps) {
   useEffect(() => {
     if (!call) return;
 
-    // Listen for custom chat events
     const unsubscribe = call.on("custom", (event: any) => {
       if (event.custom_type === "chat.message") {
         const newMessage = event.custom as Message;
@@ -44,7 +44,6 @@ export function ChatPanel({ onClose, user, effectiveUserId }: ChatPanelProps) {
     return () => unsubscribe();
   }, [call]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -68,7 +67,6 @@ export function ChatPanel({ onClose, user, effectiveUserId }: ChatPanelProps) {
         type: "chat.message",
         data: message,
       });
-      // Add locally immediately for fast feedback
       setMessages((prev) => [...prev, message]);
       setInputValue("");
     } catch (error) {
@@ -77,18 +75,29 @@ export function ChatPanel({ onClose, user, effectiveUserId }: ChatPanelProps) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#1c1f2e] text-white">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold">Chat</h2>
-        <button onClick={onClose} className="text-white/50 hover:text-white">
-          ✕
-        </button>
-      </div>
-
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide"
-      >
+    <SidebarPanel
+      title="Chat"
+      icon={<MessageSquare className="h-5 w-5 text-[#0E78F9]" />}
+      onClose={onClose}
+      footer={
+        <form onSubmit={handleSendMessage} className="flex gap-2">
+          <Input
+            placeholder="Type a message..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className="flex-1 border-white/10 bg-white/5 text-white placeholder:text-white/30 focus:border-[#0E78F9]"
+          />
+          <Button 
+            type="submit" 
+            disabled={!inputValue.trim()}
+            className="bg-[#0E78F9] hover:bg-[#0E78F9]/90 h-10 w-10 p-0 shrink-0"
+          >
+            <Send size={18} />
+          </Button>
+        </form>
+      }
+    >
+      <div ref={scrollRef} className="h-full space-y-4">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-white/30 space-y-2">
             <Send size={40} className="mb-2 opacity-20" />
@@ -127,25 +136,6 @@ export function ChatPanel({ onClose, user, effectiveUserId }: ChatPanelProps) {
           })
         )}
       </div>
-
-      <form 
-        onSubmit={handleSendMessage}
-        className="mt-4 flex gap-2 border-t border-white/10 pt-4"
-      >
-        <Input
-          placeholder="Type a message..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          className="flex-1 border-white/10 bg-white/5 text-white placeholder:text-white/30 focus:border-[#0E78F9]"
-        />
-        <Button 
-          type="submit" 
-          disabled={!inputValue.trim()}
-          className="bg-[#0E78F9] hover:bg-[#0E78F9]/90 h-10 w-10 p-0 shrink-0"
-        >
-          <Send size={18} />
-        </Button>
-      </form>
-    </div>
+    </SidebarPanel>
   );
 }
