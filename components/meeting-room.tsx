@@ -47,7 +47,7 @@ import { Loader } from "./loader";
 import { TranscriptionOverlay } from "./transcription-overlay";
 import { TranslationSidebar } from "./translation-sidebar";
 import { TTSProvider } from "./tts-provider";
-import { ChatPanel } from "./chat-panel";
+import { ChatPanel } from "@/components/chat-panel";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right" | "gallery";
 type STTProvider = "stream" | "webspeech" | "deepgram";

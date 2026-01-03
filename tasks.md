@@ -476,7 +476,18 @@ WORK CHECKLIST
 - [x] Add member role to call creation
 - [x] Improve call loading robustness
 - [x] Add media repair logic in MeetingRoom
-- [x] Verify build
+- [x] Verify buildTask ID: T-0023
+Title: Fix ChatPanel IDE Import Error
+
+Start log:
+- Timestamp: 2026-01-04 01:36
+- Plan: Standardize ChatPanel import to use absolute path alias to resolve IDE resolution issues.
+
+End log:
+- Timestamp: 2026-01-04 01:37
+- Changed: Updated `MeetingRoom.tsx` to use `@/components/chat-panel`.
+- Tests: npm run build (PASS).
+- Status: DONE
 
 END LOG (fill this after you finish coding and testing)
 
