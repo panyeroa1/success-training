@@ -22,7 +22,8 @@ import {
   Video,
   VideoOff,
   Monitor,
-  UserPlus
+  UserPlus,
+  MessageSquare
 } from "lucide-react";
 import { signInAnonymously } from "@/lib/supabase";
 import { useUser } from "@clerk/nextjs";
@@ -46,6 +47,7 @@ import { Loader } from "./loader";
 import { TranscriptionOverlay } from "./transcription-overlay";
 import { TranslationSidebar } from "./translation-sidebar";
 import { TTSProvider } from "./tts-provider";
+import { ChatPanel } from "./chat-panel";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right" | "gallery";
 type STTProvider = "stream" | "webspeech" | "deepgram";
@@ -63,6 +65,7 @@ export const MeetingRoom = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showParticipants, setShowParticipants] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [layout, setLayout] = useState<CallLayoutType>("speaker-left");
   const [sttProvider, setSTTProvider] = useState<STTProvider>("stream");
   const [translationLanguage, setTranslationLanguage] = useState<string>("off");
@@ -161,6 +164,15 @@ export const MeetingRoom = () => {
 
   // Deepgram hook
   const deepgram = useDeepgramSTT({ language: "en", model: "nova-2" });
+
+  // Ensure only one sidebar is open at a time
+  useEffect(() => {
+    if (showChat) setShowParticipants(false);
+  }, [showChat]);
+
+  useEffect(() => {
+    if (showParticipants) setShowChat(false);
+  }, [showParticipants]);
 
   // Determine if any caption system is active
   const isCaptionsActive =
@@ -272,13 +284,26 @@ export const MeetingRoom = () => {
             <CallLayout />
           </div>
 
-          <div
-            className={cn("ml-2 hidden h-full", {
-              "show-block": showParticipants,
-            })}
-          >
-            <CallParticipantsList onClose={() => setShowParticipants(false)} />
-          </div>
+          {(showParticipants || showChat) && (
+            <div className="fixed right-0 top-0 z-40 h-[calc(100vh-80px)] w-full max-w-[350px] border-l border-white/10 bg-[#1c1f2e] p-6 transition-all duration-300 ease-in-out md:static md:h-full">
+              {showParticipants && (
+                <div className="flex h-full flex-col">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-bold">Participants</h2>
+                    <button onClick={() => setShowParticipants(false)} className="text-white/50 hover:text-white">
+                      ✕
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-1">
+                    <CallParticipantsList onClose={() => setShowParticipants(false)} />
+                  </div>
+                </div>
+              )}
+              {showChat && (
+                <ChatPanel onClose={() => setShowChat(false)} user={user} effectiveUserId={effectiveUserId} />
+              )}
+            </div>
+          )}
         </div>
 
       <TranscriptionOverlay
@@ -471,14 +496,23 @@ export const MeetingRoom = () => {
 
         <CallStatsButton />
 
+        {/* Participants toggle */}
         <button
-          onClick={() =>
-            setShowParticipants((prevShowParticipants) => !prevShowParticipants)
-          }
+          onClick={() => setShowParticipants((prev) => !prev)}
           title="Show participants"
         >
-          <div className={cn(controlButtonClasses, "cursor-pointer")}>
-            <Users size={20} className="text-white" />
+          <div className={cn(controlButtonClasses, "cursor-pointer", showParticipants && "bg-blue-500/20 text-blue-400 border-blue-500/50")}>
+            <Users size={20} />
+          </div>
+        </button>
+
+        {/* Chat toggle */}
+        <button
+          onClick={() => setShowChat((prev) => !prev)}
+          title="Show chat"
+        >
+          <div className={cn(controlButtonClasses, "cursor-pointer", showChat && "bg-blue-500/20 text-blue-400 border-blue-500/50")}>
+            <MessageSquare size={20} />
           </div>
         </button>
 

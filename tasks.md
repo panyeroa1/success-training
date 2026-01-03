@@ -337,5 +337,78 @@ How it was tested:
 Test result:
 - PASS
 
+Task ID: T-0020
+Title: Real-time Chat Feature
+Status: IN-PROGRESS
+Owner: Miles
+Related repo or service: Orbit
+Branch: main
+Created: 2026-01-04 01:30
+Last updated: 2026-01-04 01:30
+
+START LOG (fill this before you start coding)
+
+Timestamp: 2026-01-04 01:30
+Current behavior or state:
+- No chat functionality exists in the meeting room.
+
+Plan and scope for this task:
+- Create `ChatPanel` component using Stream custom events.
+- Implement real-time message broadcasting and receiving.
+- Add Chat toggle to the control bar.
+- Integrate `ChatPanel` in the right sidebar.
+
+Files or modules expected to change:
+- components/chat-panel.tsx (NEW)
+- components/meeting-room.tsx
+
+Risks or things to watch out for:
+- State management for messages when sidebar is toggled.
+
+WORK CHECKLIST
+
+- [ ] Create `ChatPanel` component
+- [ ] Implement message sending/receiving
+- [ ] Add Chat toggle to `MeetingRoom`
+- [ ] Verify functionality
+
+END LOG (fill this after you finish coding and testing)
+
+------------------------------------------------------------
+
+Task ID: T-0021
+Title: Fix Participants Sidebar Visibility
+Status: IN-PROGRESS
+Owner: Miles
+Related repo or service: Orbit
+Branch: main
+Created: 2026-01-04 01:30
+Last updated: 2026-01-04 01:30
+
+START LOG (fill this before you start coding)
+
+Timestamp: 2026-01-04 01:30
+Current behavior or state:
+- Participants sidebar is difficult to view or toggle correctly due to CSS/layout issues.
+
+Plan and scope for this task:
+- Refactor sidebar layout in `MeetingRoom` to use a more robust container.
+- Fix CSS classes for toggling visibility.
+- Ensure the sidebar correctly displays Stream SDK's `CallParticipantsList`.
+
+Files or modules expected to change:
+- components/meeting-room.tsx
+- app/globals.css
+
+Risks or things to watch out for:
+- Overlapping with full-screen video background.
+
+WORK CHECKLIST
+
+- [ ] Fix sidebar CSS/visibility
+- [ ] Refactor sidebar container in `MeetingRoom`
+- [ ] Verify list display
+
+END LOG (fill this after you finish coding and testing)
 
 
