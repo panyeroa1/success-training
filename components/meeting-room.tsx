@@ -182,6 +182,33 @@ export const MeetingRoom = () => {
         ? webSpeech.isListening
         : deepgram.isListening;
 
+  // Signalling & Permission Robustness
+  useEffect(() => {
+    if (!call) return;
+    
+    // Log capabilities for debugging
+    console.log("[MeetingRoom] Own Capabilities:", call.state.ownCapabilities);
+    
+    const repairMediaState = async () => {
+      // If we joined and expect to have audio/video but none is coming through, try enabling again if allowed
+      try {
+        if (call.state.ownCapabilities.includes('send-audio') && !isMute && (microphone as any).state === 'disabled') {
+            await (microphone as any).enable();
+            console.log("[MeetingRoom] Signalling Repair: Enabled microphone");
+        }
+        if (call.state.ownCapabilities.includes('send-video') && isVideoEnabled && (camera as any).state === 'disabled') {
+            await (camera as any).enable();
+            console.log("[MeetingRoom] Signalling Repair: Enabled camera");
+        }
+      } catch (e) {
+        console.warn("[MeetingRoom] Signalling Repair failed:", e);
+      }
+    };
+    
+    const timer = setTimeout(repairMediaState, 2000);
+    return () => clearTimeout(timer);
+  }, [call, isMute, isVideoEnabled, microphone, camera]);
+
   // Update custom transcript when Web Speech or Deepgram provides new text
   useEffect(() => {
     if (sttProvider === "webspeech" && webSpeech.transcript) {
