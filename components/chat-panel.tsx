@@ -32,10 +32,9 @@ export function ChatPanel({ onClose, user, effectiveUserId }: ChatPanelProps) {
 
     // Listen for custom chat events
     const unsubscribe = call.on("custom", (event) => {
-      if (event.type === "chat.message") {
-        const newMessage = event.data as Message;
+      if (event.custom_type === "chat.message") {
+        const newMessage = event.custom.message as Message;
         setMessages((prev) => {
-          // Prevent duplicates
           if (prev.some((m) => m.id === newMessage.id)) return prev;
           return [...prev, newMessage];
         });
