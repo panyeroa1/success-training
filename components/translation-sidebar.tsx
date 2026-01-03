@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Globe, ChevronsUpDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, Globe, ChevronsUpDown, User, UserCircle } from "lucide-react";
 
 import {
   Sheet,
@@ -36,12 +36,14 @@ import { TARGET_LANGUAGES } from "@/constants/languages";
 import { cn } from "@/lib/utils";
 import { AutoPlayingTTS } from "./autoplaying-tts";
 import { useTTS } from "./tts-provider";
+import { useMeetingSpeakers } from "@/hooks/use-meeting-speakers";
 
 interface TranslationSidebarProps {
   children: React.ReactNode;
   onLanguageSelect: (lang: string) => void;
   selectedLanguage: string;
   userId: string;
+  meetingId: string;
 }
 
 export function TranslationSidebar({
@@ -49,11 +51,13 @@ export function TranslationSidebar({
   onLanguageSelect,
   selectedLanguage,
   userId,
+  meetingId,
 }: TranslationSidebarProps) {
   const [open, setOpen] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   
-  const { audioDevices, selectedSinkId, setSelectedSinkId } = useTTS();
+  const { audioDevices, selectedSinkId, setSelectedSinkId, targetUserId, setTargetUserId } = useTTS();
+  const { speakers, isLoading: isLoadingSpeakers } = useMeetingSpeakers(meetingId, userId);
 
   const handleSelect = (value: string) => {
     onLanguageSelect(value);
@@ -64,17 +68,29 @@ export function TranslationSidebar({
     (lang) => lang.value === selectedLanguage
   )?.label;
 
+  // Auto-select the first other speaker if we haven't selected one and there are others
+  useEffect(() => {
+    if (!targetUserId && speakers.length > 0) {
+      const otherSpeaker = speakers.find(s => !s.isLocal);
+      if (otherSpeaker) {
+        setTargetUserId(otherSpeaker.id);
+      }
+    }
+  }, [speakers, targetUserId, setTargetUserId]);
+
+  const selectedSpeakerName = speakers.find(s => s.id === targetUserId)?.name || targetUserId || "Select Speaker";
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
-      <SheetContent side="right" className="w-full sm:w-[400px] flex flex-col p-6 gap-6 border-l border-zinc-800 bg-[#1c1f2e] text-white">
+      <SheetContent side="right" className="w-full sm:w-[400px] flex flex-col p-6 gap-6 border-l border-zinc-800 bg-[#1c1f2e] text-white overflow-y-auto">
         <SheetHeader className="text-left space-y-1">
           <SheetTitle className="text-xl font-semibold flex items-center gap-2 text-white">
             <Globe className="h-5 w-5 text-[#0E78F9]" />
             Translation Settings
           </SheetTitle>
           <SheetDescription className="text-zinc-400 text-sm">
-            Configure your real-time translation preferences.
+            Configure your real-time translation and TTS preferences.
           </SheetDescription>
         </SheetHeader>
 
@@ -141,6 +157,39 @@ export function TranslationSidebar({
             </Popover>
             <p className="text-xs text-zinc-500">
               Select the language you want to read.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-zinc-300">Source Speaker for TTS</h3>
+            <Select value={targetUserId} onValueChange={setTargetUserId}>
+              <SelectTrigger className="w-full bg-zinc-900/50 border-white/10 text-white">
+                <SelectValue placeholder="Select Speaker" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1c1f2e] border-zinc-700 text-white z-[102]">
+                 {isLoadingSpeakers ? (
+                    <SelectItem value="loading" disabled>Loading speakers...</SelectItem>
+                 ) : speakers.length === 0 ? (
+                    <SelectItem value="none" disabled>No active speakers found</SelectItem>
+                 ) : (
+                    speakers.map((speaker) => (
+                      <SelectItem key={speaker.id} value={speaker.id} className="cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          {speaker.isLocal ? <UserCircle size={14} /> : <User size={14} />}
+                          <span>{speaker.name}</span>
+                          {speaker.isLocal && <span className="text-zinc-500 text-xs">(You)</span>}
+                        </div>
+                      </SelectItem>
+                    ))
+                 )}
+                 {/* Fallback allowing manual entry via AutoPlayingTTS if needed, or we just show the current ID if not in list */}
+                 {targetUserId && !speakers.some(s => s.id === targetUserId) && (
+                    <SelectItem value={targetUserId}>{targetUserId} (Manual/Other)</SelectItem>
+                 )}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-zinc-500">
+              Select whose speech you want to hear translated.
             </p>
           </div>
 

@@ -68,6 +68,9 @@ export async function saveTranslation(
     translated_text: entry.translated_text,
   };
 
+  console.log(`[saveTranslation] Saving: meeting=${entry.meeting_id}, speaker=${entry.user_id}, lang=${entry.target_lang}, text="${entry.translated_text.slice(0, 50)}..."`);
+
+
   try {
     // 1. Check if a record exists for this speaker + meeting + target_language
     const { data: existingRows, error: fetchError } = await supabase

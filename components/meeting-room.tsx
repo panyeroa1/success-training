@@ -10,7 +10,7 @@ import {
   useCall,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { ClosedCaption, LayoutList, Users, ChevronDown, Languages } from "lucide-react";
+import { ClosedCaption, LayoutList, Users, ChevronDown, Languages, VolumeX, Volume2 } from "lucide-react";
 import { signInAnonymously } from "@/lib/supabase";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -53,6 +53,35 @@ export const MeetingRoom = () => {
   const [sttProvider, setSTTProvider] = useState<STTProvider>("stream");
   const [translationLanguage, setTranslationLanguage] = useState<string>("off");
   const [sbUserId, setSbUserId] = useState<string | null>(null);
+  const [muteOriginalAudio, setMuteOriginalAudio] = useState(false);
+
+  // Effect to mute/unmute all remote participant audio elements
+  useEffect(() => {
+    const muteRemoteAudio = () => {
+      // Find all video/audio elements in the call container and mute them
+      const mediaElements = document.querySelectorAll<HTMLVideoElement | HTMLAudioElement>(
+        '[data-testid="participant-view"] video, [data-testid="participant-view"] audio, .str-video__participant-view video, .str-video__participant-view audio'
+      );
+      
+      mediaElements.forEach((el) => {
+        // Only mute remote participants, not local
+        const isLocal = el.closest('[data-testid="local-participant"]') || 
+                       el.closest('.str-video__participant-view--local');
+        if (!isLocal) {
+          el.muted = muteOriginalAudio;
+        }
+      });
+    };
+
+    // Run immediately
+    muteRemoteAudio();
+    
+    // Also set up a MutationObserver to catch dynamically added elements
+    const observer = new MutationObserver(muteRemoteAudio);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [muteOriginalAudio]);
 
   // Initialize early anonymous auth
   useEffect(() => {
@@ -326,6 +355,7 @@ export const MeetingRoom = () => {
           selectedLanguage={translationLanguage} 
           onLanguageSelect={setTranslationLanguage}
           userId={effectiveUserId}
+          meetingId={call?.id || ""}
         >
           <div
             className={cn(controlButtonClasses, "cursor-pointer flex items-center justify-center gap-1", {
@@ -339,6 +369,19 @@ export const MeetingRoom = () => {
             })} />
           </div>
         </TranslationSidebar>
+
+        {/* Mute Original Audio toggle */}
+        <button
+          onClick={() => setMuteOriginalAudio((prev) => !prev)}
+          title={muteOriginalAudio ? "Unmute Original Audio" : "Mute Original Audio (hear only TTS)"}
+          className={cn(
+            controlButtonClasses,
+            "cursor-pointer",
+            muteOriginalAudio && "bg-red-500/20 text-red-400 border-red-500/50"
+          )}
+        >
+          {muteOriginalAudio ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
 
         <CallStatsButton />
 

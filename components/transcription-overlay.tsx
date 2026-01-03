@@ -104,10 +104,10 @@ export const TranscriptionOverlay = ({
           );
 
           // 2. Save translation to Supabase
-          // STRICT: Always prefer the Supabase ID (sbUserId) if available, as that's what TTS listens to.
-          const activeUserId = sbUserId || userId || line.speakerId || "anonymous";
+          // Use the SPEAKER's ID so listeners can query by speaker to get TTS
+          const speakerIdentifier = line.speakerId || userId || sbUserId || "anonymous";
           const { success, error } = await saveTranslation({
-            user_id: activeUserId,
+            user_id: speakerIdentifier,
             meeting_id: meetingId,
             source_lang: "auto",
             target_lang: targetLanguage,
