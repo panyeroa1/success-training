@@ -47,45 +47,52 @@ export async function getTranslation(
 }
 
 /**
- * Save a translation entry to Supabase
+ * Save a translation entry to Supabase (speech_translations table)
+ * Maps our internal field names to the database column names
  */
 export async function saveTranslation(
   entry: Omit<TranslationEntry, "id" | "created_at">
 ): Promise<{ success: boolean; error?: string }> {
-  // console.log("[saveTranslation] Processing entry:", entry);
-  
   if (!entry.meeting_id || !entry.user_id) {
     console.warn("[saveTranslation] Missing meeting_id or user_id, skipping save.");
     return { success: false, error: "Missing required IDs" };
   }
 
+  // Map to database column names for speech_translations table
+  const dbEntry = {
+    meeting_id: entry.meeting_id,
+    speaker_name: entry.user_id, // Use user_id as speaker identifier
+    source_language: entry.source_lang,
+    target_language: entry.target_lang,
+    source_text: entry.original_text,
+    translated_text: entry.translated_text,
+  };
+
   try {
-    // 1. Check if a record exists for this user + meeting + target_lang
+    // 1. Check if a record exists for this speaker + meeting + target_language
     const { data: existingRows, error: fetchError } = await supabase
-      .from("translations")
-      .select("id, original_text, translated_text")
+      .from("speech_translations")
+      .select("id, source_text, translated_text")
       .eq("meeting_id", entry.meeting_id)
-      .eq("user_id", entry.user_id)
-      .eq("target_lang", entry.target_lang)
+      .eq("speaker_name", entry.user_id)
+      .eq("target_language", entry.target_lang)
       .order("created_at", { ascending: false })
       .limit(1);
 
     if (fetchError) {
       console.error("[saveTranslation] Error checking existing rows:", fetchError);
-      // We don't return here; we fall back to insert attempt if check fails, 
-      // though ideally we should probably just proceed carefully.
     }
 
     // 2. If exists, Update (Append)
     if (existingRows && existingRows.length > 0) {
       const existing = existingRows[0];
-      const newOriginal = (existing.original_text || "") + " " + entry.original_text;
+      const newSource = (existing.source_text || "") + " " + entry.original_text;
       const newTranslated = (existing.translated_text || "") + " " + entry.translated_text;
 
       const { error: updateError } = await supabase
-        .from("translations")
+        .from("speech_translations")
         .update({ 
-          original_text: newOriginal, 
+          source_text: newSource, 
           translated_text: newTranslated 
         })
         .eq("id", existing.id);
@@ -95,12 +102,11 @@ export async function saveTranslation(
         return { success: false, error: updateError.message };
       }
       
-      // console.log("[saveTranslation] Successfully appended to row:", existing.id);
       return { success: true };
     }
 
     // 3. If not exists, Insert New
-    const { data, error } = await supabase.from("translations").insert([entry]).select();
+    const { data, error } = await supabase.from("speech_translations").insert([dbEntry]).select();
 
     if (error) {
       console.error("[saveTranslation] Insert failed:", error);

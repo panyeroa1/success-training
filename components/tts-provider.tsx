@@ -9,7 +9,7 @@ const CARTESIA_VOICE_ID = process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || "9c7e6604
 const CARTESIA_URL = "https://api.cartesia.ai/tts/bytes";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1/translations`;
+const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1/speech_translations`;
 const FETCH_INTERVAL_MS = 3000;
 
 interface TTSContextType {
@@ -237,7 +237,7 @@ export function TTSProvider({ children, initialUserId }: { children: React.React
       if (!targetUserId || !isMounted.current) return;
 
       try {
-        const url = `${SUPABASE_REST_URL}?user_id=eq.${targetUserId}&select=translated_text&order=created_at.desc&limit=1`;
+        const url = `${SUPABASE_REST_URL}?speaker_name=eq.${targetUserId}&select=translated_text&order=created_at.desc&limit=1`;
         const latestItems = await fetchSupabase(url);
 
         if (latestItems.length === 0 || !latestItems[0].translated_text) return;
@@ -282,7 +282,7 @@ export function TTSProvider({ children, initialUserId }: { children: React.React
 
       setStatus("Fetching history...");
       try {
-        const initUrl = `${SUPABASE_REST_URL}?user_id=eq.${targetUserId}&select=translated_text&order=created_at.desc&limit=1`;
+        const initUrl = `${SUPABASE_REST_URL}?speaker_name=eq.${targetUserId}&select=translated_text&order=created_at.desc&limit=1`;
         const initialItems = await fetchSupabase(initUrl);
 
         if (initialItems.length > 0 && initialItems[0].translated_text) {

@@ -17,6 +17,7 @@ function getSupabaseClient(): SupabaseClient | null {
 
 /**
  * GET /api/translate/history?meeting_id=xxx
+ * Reads from speech_translations table
  */
 export async function GET(request: NextRequest) {
   const supabase = getSupabaseClient();
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     const meetingId = searchParams.get("meeting_id");
 
     let query = supabase
-      .from("translations")
+      .from("speech_translations")
       .select("*")
       .order("created_at", { ascending: true });
 
@@ -45,7 +46,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ translations: data || [] });
+    // Map database columns back to expected format
+    const translations = (data || []).map((row) => ({
+      id: row.id,
+      meeting_id: row.meeting_id,
+      user_id: row.speaker_name,
+      source_lang: row.source_language,
+      target_lang: row.target_language,
+      original_text: row.source_text,
+      translated_text: row.translated_text,
+      created_at: row.created_at,
+    }));
+
+    return NextResponse.json({ translations });
   } catch (error) {
     console.error("Translation History API error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
