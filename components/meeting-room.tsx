@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CallControls,
   CallParticipantsList,
   CallStatsButton,
   CallingState,
@@ -10,11 +9,26 @@ import {
   useCall,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { ClosedCaption, LayoutList, Users, ChevronDown, Languages, VolumeX, Volume2 } from "lucide-react";
+import { 
+  ClosedCaption, 
+  LayoutList, 
+  Users, 
+  ChevronDown, 
+  Languages, 
+  VolumeX, 
+  Volume2,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  Monitor,
+  UserPlus
+} from "lucide-react";
 import { signInAnonymously } from "@/lib/supabase";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 import {
   DropdownMenu,
@@ -107,10 +121,17 @@ export const MeetingRoom = () => {
     useCallCallingState,
     useIsCallCaptioningInProgress,
     useLocalParticipant,
+    useMicrophoneState,
+    useCameraState,
+    useScreenShareState,
   } = useCallStateHooks();
   const callingState = useCallCallingState();
   const localParticipant = useLocalParticipant();
   const isStreamCaptionsEnabled = useIsCallCaptioningInProgress();
+  const { isMute, microphone } = useMicrophoneState();
+  const { isEnabled: isVideoEnabled, camera } = useCameraState();
+  const { isEnabled: isScreenSharing, screenShare } = useScreenShareState();
+  const { toast } = useToast();
 
   // Web Speech API hook
   const webSpeech = useWebSpeechSTT({ language: "en-US", continuous: true });
@@ -245,8 +266,49 @@ export const MeetingRoom = () => {
         sbUserId={effectiveUserId}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex w-full flex-wrap items-center justify-center gap-2 border-t border-white/10 bg-black/80 px-3 py-3 backdrop-blur-md">
-        <CallControls onLeave={() => router.push("/")} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex w-full flex-wrap items-center justify-center gap-3 border-t border-white/10 bg-black/80 px-4 py-4 backdrop-blur-md">
+        
+        {/* Audio Toggle */}
+        <button
+          onClick={() => microphone.toggle()}
+          title={isMute ? "Unmute Microphone" : "Mute Microphone"}
+          className={cn(controlButtonClasses, !isMute ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-red-400 border-red-500/30 bg-red-500/10")}
+        >
+          {isMute ? <MicOff size={20} /> : <Mic size={20} />}
+        </button>
+
+        {/* Video Toggle */}
+        <button
+          onClick={() => camera.toggle()}
+          title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
+          className={cn(controlButtonClasses, isVideoEnabled ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-red-400 border-red-500/30 bg-red-500/10")}
+        >
+          {isVideoEnabled ? <Video size={20} /> : <VideoOff size={20} />}
+        </button>
+
+        {/* Screen Share Toggle */}
+        <button
+          onClick={() => screenShare.toggle()}
+          title={isScreenSharing ? "Stop Sharing" : "Share Screen"}
+          className={cn(controlButtonClasses, isScreenSharing && "text-blue-400 border-blue-500/50 bg-blue-500/20")}
+        >
+          <Monitor size={20} />
+        </button>
+
+        <div className="mx-2 h-8 w-px bg-white/10" />
+
+        {/* Invite Button */}
+        <button
+          onClick={() => {
+            const link = `${window.location.origin}/meeting/${call?.id}`;
+            navigator.clipboard.writeText(link);
+            toast({ title: "Invite link copied!" });
+          }}
+          title="Invite Someone"
+          className={cn(controlButtonClasses, "hover:text-emerald-400 hover:border-emerald-500/50")}
+        >
+          <UserPlus size={20} />
+        </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -396,7 +458,7 @@ export const MeetingRoom = () => {
           </div>
         </button>
 
-        {!isPersonalRoom && <EndCallButton />}
+        <EndCallButton />
       </div>
       </div>
     </TTSProvider>

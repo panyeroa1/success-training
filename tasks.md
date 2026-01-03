@@ -134,3 +134,56 @@ WORK CHECKLIST
 - [ ] Verify build and functionality
 
 END LOG (fill this after you finish coding and testing)
+Task ID: T-0015
+Title: Fix Sharing and Joining Participants
+Status: DONE
+Owner: Miles
+Related repo or service: Orbit
+Branch: main
+Created: 2026-01-04 00:00
+Last updated: 2026-01-04 00:20
+
+START LOG (fill this before you start coding)
+
+Timestamp: 2026-01-04 00:00
+Current behavior or state:
+- Using generic `CallControls` which lacks a dedicated "Invite" button.
+- Users find "sharing" and "joining" confusing or limited.
+
+Plan and scope for this task:
+- Replace `CallControls` with granular buttons (Mic, Cam, Screen Share).
+- Add an "Invite" button to copy meeting link.
+- Update `EndCallButton` logic to show "Leave" for guests.
+
+Files or modules expected to change:
+- components/meeting-room.tsx
+- components/end-call-button.tsx
+
+Risks or things to watch out for:
+- Stream SDK state sync for granular toggles.
+
+WORK CHECKLIST
+
+- [x] Implement custom granular buttons in `MeetingRoom`
+- [x] Add "Invite" button functionality
+- [x] Update `EndCallButton` visibility/behavior
+- [x] Verify build
+
+END LOG (fill this after you finish coding and testing)
+
+Timestamp: 2026-01-04 00:20
+Summary of what actually changed:
+- Implemented custom control bar with granular toggles.
+- Added "Invite" button for easy meeting link sharing.
+- Enhanced `EndCallButton` with dual "Leave/End" logic.
+
+Files actually modified:
+- components/meeting-room.tsx
+- components/end-call-button.tsx
+
+How it was tested:
+- npm run build
+
+Test result:
+- PASS
+
