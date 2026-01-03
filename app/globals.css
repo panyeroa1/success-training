@@ -87,6 +87,11 @@ body::before {
   padding: 10px;
 }
 
+/* Hide built-in participants bar when custom sidebar is open */
+.custom-sidebar-open .str-video__participants-bar {
+  display: none !important;
+}
+
 .str-video__speaker-layout__wrapper,
 .str-video__paginated-grid-layout {
   max-height: none !important;

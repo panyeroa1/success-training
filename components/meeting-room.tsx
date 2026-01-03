@@ -45,7 +45,7 @@ import { useDeepgramSTT } from "@/hooks/use-deepgram-stt";
 import { EndCallButton } from "./end-call-button";
 import { Loader } from "./loader";
 import { TranscriptionOverlay } from "./transcription-overlay";
-import { TranslationSidebar } from "./translation-sidebar";
+import { TranslationPanel } from "./translation-panel";
 import { TTSProvider } from "./tts-provider";
 import { ChatPanel } from "@/components/chat-panel";
 
@@ -66,6 +66,7 @@ export const MeetingRoom = () => {
   const searchParams = useSearchParams();
   const [showParticipants, setShowParticipants] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [layout, setLayout] = useState<CallLayoutType>("speaker-left");
   const [sttProvider, setSTTProvider] = useState<STTProvider>("stream");
   const [translationLanguage, setTranslationLanguage] = useState<string>("off");
@@ -167,12 +168,25 @@ export const MeetingRoom = () => {
 
   // Ensure only one sidebar is open at a time
   useEffect(() => {
-    if (showChat) setShowParticipants(false);
+    if (showChat) {
+      setShowParticipants(false);
+      setShowTranslation(false);
+    }
   }, [showChat]);
 
   useEffect(() => {
-    if (showParticipants) setShowChat(false);
+    if (showParticipants) {
+      setShowChat(false);
+      setShowTranslation(false);
+    }
   }, [showParticipants]);
+
+  useEffect(() => {
+    if (showTranslation) {
+      setShowParticipants(false);
+      setShowChat(false);
+    }
+  }, [showTranslation]);
 
   // Determine if any caption system is active
   const isCaptionsActive =
@@ -305,14 +319,18 @@ export const MeetingRoom = () => {
 
   return (
     <TTSProvider initialUserId={effectiveUserId} targetLanguage={translationLanguage} meetingId={call?.id || ""}>
-      <div className="relative h-screen w-full overflow-hidden text-white">
+      <div className={cn("relative h-screen w-full overflow-hidden text-white", {
+        "custom-sidebar-open": showParticipants || showChat || showTranslation
+      })}>
         <div className="relative flex size-full items-center justify-center">
-          <div className="flex size-full items-center">
+          <div className={cn("flex size-full items-center", {
+            "max-w-[calc(100%-350px)]": (showParticipants || showChat || showTranslation)
+          })}>
             <CallLayout />
           </div>
 
-          {(showParticipants || showChat) && (
-            <div className="fixed right-0 top-0 z-40 h-[calc(100vh-80px)] w-full max-w-[350px] border-l border-white/10 bg-[#1c1f2e] p-6 transition-all duration-300 ease-in-out md:static md:h-full">
+          {(showParticipants || showChat || showTranslation) && (
+            <div className="fixed right-0 top-0 z-50 h-screen w-full max-w-[350px] border-l border-white/10 bg-[#1c1f2e] p-6 transition-all duration-300 ease-in-out">
               {showParticipants && (
                 <div className="flex h-full flex-col">
                   <div className="mb-4 flex items-center justify-between">
@@ -328,6 +346,15 @@ export const MeetingRoom = () => {
               )}
               {showChat && (
                 <ChatPanel onClose={() => setShowChat(false)} user={user} effectiveUserId={effectiveUserId} />
+              )}
+              {showTranslation && (
+                <TranslationPanel 
+                  onClose={() => setShowTranslation(false)} 
+                  onLanguageSelect={setTranslationLanguage}
+                  selectedLanguage={translationLanguage}
+                  userId={effectiveUserId}
+                  meetingId={call?.id || ""}
+                />
               )}
             </div>
           )}
@@ -488,25 +515,24 @@ export const MeetingRoom = () => {
           </DropdownMenu>
         </div>
 
-        {/* Translation Sidebar */}
-        <TranslationSidebar 
-          selectedLanguage={translationLanguage} 
-          onLanguageSelect={setTranslationLanguage}
-          userId={effectiveUserId}
-          meetingId={call?.id || ""}
+        {/* Translation Toggle */}
+        <button
+          onClick={() => setShowTranslation((prev) => !prev)}
+          title="Translator (Select Language)"
         >
           <div
             className={cn(controlButtonClasses, "cursor-pointer flex items-center justify-center gap-1", {
-              "bg-emerald-500/20 text-emerald-400 border-emerald-500/50": translationLanguage !== "off"
+              "bg-emerald-500/20 text-emerald-400 border-emerald-500/50": translationLanguage !== "off",
+              "bg-blue-500/20 text-blue-400 border-blue-500/50": showTranslation
             })}
-            title="Translator (Select Language)"
           >
             <Languages size={20} />
             <ChevronDown size={14} className={cn("text-white/50", {
-              "text-emerald-400/50": translationLanguage !== "off"
+              "text-emerald-400/50": translationLanguage !== "off",
+              "text-blue-400/50": showTranslation
             })} />
           </div>
-        </TranslationSidebar>
+        </button>
 
         {/* Mute Original Audio toggle */}
         <button

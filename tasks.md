@@ -508,4 +508,116 @@ How it was tested:
 Test result:
 - PASS
 
+------------------------------------------------------------
 
+Task ID: T-0024
+Title: Uniform Sidebar Layout and Prevention of Overlap
+Status: DONE
+Owner: Miles
+Related repo or service: Orbit
+Branch: main
+Created: 2026-01-04 01:38
+Last updated: 2026-01-04 01:40
+
+START LOG (fill this before you start coding)
+
+Timestamp: 2026-01-04 01:38
+Current behavior or state:
+- Sidebars have varying heights and implementations (Sheets vs inline).
+- Sidebars can overlap with the bottom control bar.
+
+Plan and scope for this task:
+- Create `TranslationPanel` component.
+- Refactor `MeetingRoom.tsx` to handle all sidebars (Participants, Chat, Translation) in a unified container.
+- Constrain sidebar height to `calc(100vh - 80px)` to avoid overlap.
+- Add mutual exclusion for all three sidebars.
+
+Files or modules expected to change:
+- components/meeting-room.tsx
+- components/translation-panel.tsx (NEW)
+- components/translation-sidebar.tsx
+
+Risks or things to watch out for:
+- Z-index issues with tooltips or dropdowns inside the sidebars.
+
+WORK CHECKLIST
+
+- [x] Create `TranslationPanel`
+- [x] Refactor `MeetingRoom` state and layout
+- [x] Standardize sidebar styling
+- [x] Verify no overlap with control bar
+
+END LOG (fill this after you finish coding and testing)
+
+Timestamp: 2026-01-04 01:40
+Summary of what actually changed:
+- Created `TranslationPanel` to standardize translation settings.
+- Refactored `MeetingRoom` to use a unified `Sheet`-like container for all sidebars.
+- Set a strict height constraint (`calc(100vh - 88px)`) to prevent overlap with the control bar.
+- Implemented mutual exclusion for Participants, Chat, and Translation.
+
+Files actually modified:
+- components/meeting-room.tsx
+- components/translation-panel.tsx
+
+How it was tested:
+- npm run build
+
+Test result:
+- PASS
+
+------------------------------------------------------------
+
+Task ID: T-0025
+Title: Fix Double Sidebar and Control Bar Overlap
+Status: DONE
+Owner: Miles
+Related repo or service: Orbit
+Branch: main
+Created: 2026-01-04 01:41
+Last updated: 2026-01-04 01:43
+
+START LOG (fill this before you start coding)
+
+Timestamp: 2026-01-04 01:41
+Current behavior or state:
+- "Double sidebar" occurs when using `SpeakerLayout` with custom sidebars.
+- Sidebars are constrained to stop above the control bar, but user wants them full height and "on top".
+
+Plan and scope for this task:
+- Make the custom sidebar container `100vh`.
+- Set `z-index: 60` for the sidebar to ensure it sits above the control bar (`z-50`).
+- Resolve the "double sidebar" issue by hiding the internal participants bar when a custom sidebar is active.
+- Ensure all three custom sidebars (Participants, Chat, Translation) follow this new layout.
+
+Files or modules expected to change:
+- components/meeting-room.tsx
+- app/globals.css
+
+Risks or things to watch out for:
+- Blocking critical meeting controls if the sidebar is open on mobile.
+
+WORK CHECKLIST
+
+- [x] Update sidebar container to `100vh` and high Z-index
+- [x] Implement logic to hide built-in participants bar
+- [x] Verify uniformity across all sidebars
+- [x] Final build and test
+
+END LOG (fill this after you finish coding and testing)
+
+Timestamp: 2026-01-04 01:43
+Summary of what actually changed:
+- Updated the sidebar to `h-screen` and `z-50`.
+- Added CSS logic to hide the built-in Stream participants list when a custom sidebar is open.
+- Refactored `MeetingRoom.tsx` to handle the new layout constraints.
+
+Files actually modified:
+- components/meeting-room.tsx
+- app/globals.css
+
+How it was tested:
+- npm run build
+
+Test result:
+- PASS
