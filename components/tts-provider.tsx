@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { getTranslation } from "@/lib/translate-service";
+import { useCall } from "@stream-io/video-react-sdk";
+import { getTranslation, saveTranslation } from "@/lib/translate-service";
 
 // --- CONFIGURATION (from environment variables) ---
 const CARTESIA_API_KEY = process.env.NEXT_PUBLIC_CARTESIA_API_KEY || "";
@@ -40,6 +41,7 @@ export function useTTS() {
 }
 
 export function TTSProvider({ children, initialUserId, targetLanguage, meetingId }: { children: React.ReactNode; initialUserId: string; targetLanguage: string; meetingId: string }) {
+  const call = useCall();
   const [targetUserId, setTargetUserId] = useState(initialUserId);
   const [isMuted, setIsMuted] = useState(false);
   const [status, setStatus] = useState("Waiting for interaction...");
@@ -234,71 +236,54 @@ export function TTSProvider({ children, initialUserId, targetLanguage, meetingId
       animationFrameId = requestAnimationFrame(playbackManager);
     };
 
-    const sentenceFinder = async () => {
-      if (!targetUserId || !isMounted.current) return;
+    const handleCustomEvent = async (event: any) => {
+        if (event.type !== "transcription.new") return;
+        
+        const data = event.custom; // payload is in .custom property
+        if (!data || !data.text) return;
+        
+        // Filter by speaker
+        if (data.speakerId !== targetUserId) return;
 
-      try {
-        // Poll transcript_segments (source text) instead of translations
-        // speaker_id column stores the speaker's ID, meeting_id ensures correct room
-        const url = `${SUPABASE_REST_URL}?speaker_id=eq.${targetUserId}&meeting_id=eq.${meetingId}&select=source_text&order=created_at.desc&limit=1`;
-        const latestItems = await fetchSupabase(url);
+        console.log(`[TTS] Received event:`, data);
 
-        if (latestItems.length === 0 || !latestItems[0].source_text) return;
+        // Process Text
+        const text = data.text;
+        
+        // Translate
+        if (targetLanguage && targetLanguage !== "off") {
+            try {
+                const translated = await getTranslation(text, targetLanguage);
+                if (translated) {
+                    playbackQueue.current.push(translated);
+                    setStatus(`Received & Translated: "${text.substring(0, 10)}..."`);
+                    setStatusType("info");
 
-        const currentText = latestItems[0].source_text.trim();
-        let newTextToProcess = "";
-
-        if (
-          currentText.length > lastProcessedText.current.length &&
-          currentText.startsWith(lastProcessedText.current)
-        ) {
-          newTextToProcess = currentText.substring(lastProcessedText.current.length).trim();
-        }
-
-        if (newTextToProcess) {
-          // Detect sentence boundaries
-          const newSentences = splitIntoSentences(newTextToProcess);
-          
-          if (newSentences.length > 0) {
-            // Update cursor immediately to avoid re-processing
-            lastProcessedText.current = currentText;
-
-            // TRANSLATION LOGIC
-            if (targetLanguage && targetLanguage !== "off") {
-                setStatus(`Translating ${newSentences.length} line(s) to ${targetLanguage}...`);
-                
-                for (const sentence of newSentences) {
-                    try {
-                        // Translate each sentence
-                        const translated = await getTranslation(sentence, targetLanguage);
-                        if (translated) {
-                            playbackQueue.current.push(translated);
-                        } else {
-                            console.warn("Translation failed, skipping TTS for:", sentence);
-                        }
-                    } catch (err) {
-                        console.error("Translation error during TTS flow:", err);
-                    }
+                    // Save translated text per user request
+                    saveTranslation({
+                        user_id: targetUserId, // The speaker
+                        meeting_id: meetingId,
+                        source_lang: "auto",
+                        target_lang: targetLanguage,
+                        original_text: text,
+                        translated_text: translated
+                    }).catch(e => console.warn("Failed to save translation:", e));
                 }
-                setStatusType("info");
-            } else {
-                // If translation is OFF, do we play original? 
-                // Usually TTS is for translation. If off, we might just queue nothing.
-                // Or maybe the user WANTS to hear original TTS?
-                // Let's assume TTS is primarily for translation as per instruction.
-                // But for debug/accessibility it might be useful.
-                // For now, I'll log and SKIP if off, to avoid double audio (original + TTS).
-                // console.log("Translation off, skipping TTS");
+            } catch (err) {
+                console.error("Translation error:", err);
             }
-          }
+        } else {
+             // If translation off, maybe play original? Or skip.
+             // As per previous logic, we skip or queue original if desired.
+             // For now, assume translation required.
         }
-      } catch (error: any) {
-        console.error("Sentence Finder Error:", error);
-        setStatus(`Monitor Error: ${getErrorMessage(error)}`);
-        setStatusType("error");
-        if (mainLoopInterval) clearInterval(mainLoopInterval);
-      }
     };
+
+    // removed sentenceFinder polling
+
+    if (call) {
+        call.on("custom", handleCustomEvent);
+    }
 
     const startFlow = async () => {
       if (!targetUserId) {
@@ -311,38 +296,21 @@ export function TTSProvider({ children, initialUserId, targetLanguage, meetingId
          return;
       }
 
-      setStatus("Fetching history...");
-      try {
-        const initUrl = `${SUPABASE_REST_URL}?speaker_id=eq.${targetUserId}&meeting_id=eq.${meetingId}&select=source_text&order=created_at.desc&limit=1`;
-        const initialItems = await fetchSupabase(initUrl);
-
-        if (initialItems.length > 0 && initialItems[0].source_text) {
-          // Just set the cursor to the latest text so we don't replay old stuff
-          // or translate old stuff unnecessarily
-          lastProcessedText.current = initialItems[0].source_text.trim(); 
-          setStatus("Monitoring for translations...");
-        } else {
-          lastProcessedText.current = "";
-          setStatus("Ready. Waiting for new text...");
-        }
-
-        // Start Loops
-        animationFrameId = requestAnimationFrame(playbackManager);
-        mainLoopInterval = setInterval(sentenceFinder, FETCH_INTERVAL_MS);
-      } catch (error: any) {
-        setStatus(`Init Failed: ${getErrorMessage(error)}`);
-        setStatusType("error");
-      }
+      setStatus("Ready. Waiting for live speech...");
+      // Optional: Fetch history once if needed, but we focus on live events now.
+      
+      // Start Loops
+      animationFrameId = requestAnimationFrame(playbackManager);
     };
 
-    startFlow();
+
 
     return () => {
       isMounted.current = false;
-      if (mainLoopInterval) clearInterval(mainLoopInterval);
       cancelAnimationFrame(animationFrameId);
+      if (call) call.off("custom", handleCustomEvent);
     };
-  }, [targetUserId, hasUserInteracted, selectedSinkId, targetLanguage]);
+  }, [targetUserId, hasUserInteracted, selectedSinkId, targetLanguage, meetingId, call]);
 
   const enableAudio = () => {
     setHasUserInteracted(true);

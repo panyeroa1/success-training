@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallStateHooks } from "@stream-io/video-react-sdk";
+import { useCallStateHooks, useCall } from "@stream-io/video-react-sdk";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { saveTranscription } from "@/lib/transcription-service";
+// import { saveTranscription } from "@/lib/transcription-service";
 
 
 import { signInAnonymously } from "@/lib/supabase";
@@ -44,7 +44,7 @@ export const TranscriptionOverlay = ({
   sbUserId: propSbUserId,
 }: TranscriptionOverlayProps) => {
   const { useCallClosedCaptions } = useCallStateHooks();
-  // const call = useCall(); // Removed redundant call
+  const call = useCall();
   const streamCaptions = useCallClosedCaptions();
   const [lines, setLines] = useState<CaptionLine[]>([]);
   const [internalSbUserId, setInternalSbUserId] = useState<string | null>(null);
@@ -91,14 +91,37 @@ export const TranscriptionOverlay = ({
       // Translation happens client-side for the TTS listener.
 
       // Save as regular transcription
+      /* 
+      // User Optimization: Disable saving source text to DB to reduce latency.
+      // We rely on Custom Events for TTS and save TRANSLATION only in TTSProvider.
       await saveTranscription({
         user_id: userId || line.speakerId || "anonymous",
         room_name: roomName,
         sender: line.speaker,
         text: originalText,
       });
+      */
+
+      // Broadcast Real-time Event for TTS Listeners
+      if (call) {
+        try {
+            await call.sendCustomEvent({
+                type: "transcription.new",
+                data: {
+                    text: originalText,
+                    speakerId: line.speakerId,
+                    speakerName: line.speaker,
+                    meetingId: meetingId,
+                    timestamp: Date.now()
+                },
+            });
+            console.log(`[TranscriptionOverlay] Sent custom event: transcription.new`);
+        } catch (evtErr) {
+            console.error(`[TranscriptionOverlay] Failed to send custom event:`, evtErr);
+        }
+      }
     },
-    [roomName, meetingId, userId, sbUserId, targetLanguage]
+    [meetingId, userId, sbUserId, targetLanguage, call]
   );
 
   // Trigger flow
