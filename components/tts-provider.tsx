@@ -305,6 +305,8 @@ export function TTSProvider({ children, initialUserId, targetLanguage, meetingId
 
 
 
+    startFlow();
+
     return () => {
       isMounted.current = false;
       cancelAnimationFrame(animationFrameId);
