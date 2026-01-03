@@ -71,7 +71,13 @@ export const MeetingRoom = () => {
 
   // Effect to mute/unmute all remote participant audio elements
   useEffect(() => {
+    let rafId: number | null = null;
+    let isScheduled = false;
+
     const muteRemoteAudio = () => {
+      // Cancel any pending updates
+      isScheduled = false;
+      
       // Find all video/audio elements in the call container and mute them
       const mediaElements = document.querySelectorAll<HTMLVideoElement | HTMLAudioElement>(
         '[data-testid="participant-view"] video, [data-testid="participant-view"] audio, .str-video__participant-view video, .str-video__participant-view audio'
@@ -87,14 +93,31 @@ export const MeetingRoom = () => {
       });
     };
 
-    // Run immediately
+    // Throttled version using requestAnimationFrame
+    const scheduleMuteUpdate = () => {
+      if (!isScheduled) {
+        isScheduled = true;
+        rafId = requestAnimationFrame(muteRemoteAudio);
+      }
+    };
+
+    // Run immediately on mount or when toggle changes
     muteRemoteAudio();
     
-    // Also set up a MutationObserver to catch dynamically added elements
-    const observer = new MutationObserver(muteRemoteAudio);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Set up a MutationObserver with throttling to catch dynamically added elements
+    const observer = new MutationObserver(scheduleMuteUpdate);
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true,
+      attributes: false, // Don't observe attribute changes to reduce noise
+    });
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, [muteOriginalAudio]);
 
   // Initialize early anonymous auth
