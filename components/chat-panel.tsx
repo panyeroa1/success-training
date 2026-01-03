@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCall } from "@stream-io/video-react-sdk";
-import { Send, User } from "lucide-react";
+import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";

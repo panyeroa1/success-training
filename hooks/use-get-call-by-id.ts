@@ -12,17 +12,18 @@ export const useGetCallById = (id: string | string[]) => {
 
     const loadCall = async () => {
       try {
-        // Call getOrCreate() to ensure participants can join
-        // This grants the necessary permissions for viewing and joining
         const callId = Array.isArray(id) ? id[0] : id;
         const call = streamClient.call("default", callId);
+        
+        // Use getOrCreate() to fetch/create the call and ensure permissions
         await call.getOrCreate();
+        
         setCall(call);
       } catch (error) {
         console.error("Error loading call:", error);
+      } finally {
+        setIsCallLoading(false);
       }
-
-      setIsCallLoading(false);
     };
 
     loadCall();
